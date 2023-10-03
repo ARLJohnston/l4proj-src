@@ -1,0 +1,11 @@
+#Ignore all
+*
+
+# Include directories
+!*/
+
+#Wanted Files
+!.gitignore
+!src/*.hs
+!*.nix
+!*.md
