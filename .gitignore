@@ -1,11 +1,13 @@
-#Ignore all
+#Ignore Everything
 *
 
-# Include directories
-!*/
-
-#Wanted Files
-!.gitignore
-!src/*.hs
+#Now add back what we want
+!LICENSE
+!*.cabal
 !*.nix
-!*.md
+!src
+!src/*.org
+!src/*.hs
+!test
+!test/*.org
+!test/*.hs
