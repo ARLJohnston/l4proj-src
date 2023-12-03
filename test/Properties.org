@@ -1,0 +1,76 @@
+#+TITLE: Properties for testing Model Checker
+#+Author: Alistair Johnston
+#+PROPERTY: header-args :tangle Properties.hs
+#+auto_tangle: t
+#+STARTUP: showeverything latexpreview
+#+OPTIONS: toc:2 tex:t
+
+:LOGBOOK:
+CLOCK: [2023-12-03 Sun 12:00]--[2023-12-03 Sun 12:30] =>  0:30 - Generators
+:END:
+
+* File Header
+#+BEGIN_SRC haskell
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverlappingInstances #-}
+
+import Test.QuickCheck
+
+import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix)
+import Data.Vector (Vector, toList)
+import Data.List (nub, findIndices, intersect, union, isSubsequenceOf)
+import Data.Bool
+#+END_SRC
+
+* Generators
+#+BEGIN_SRC haskell
+instance Arbitrary (Matrix Bool) where
+  arbitrary = do
+    -- Transition System required to be square
+    n <- getSize
+    elts <- vectorOf (n*n) arbitrary
+    return $ fromList n n elts
+
+instance {-# OVERLAPPING #-} Arbitrary [Bool] where
+  arbitrary = do
+    n <- getSize
+    vectorOf n arbitrary
+
+instance {-# OVERLAPPING #-} Arbitrary (Matrix a -> Int -> [a]) where
+  arbitrary = oneof [return pre, return post]
+#+END_SRC
+
+* CTL Model Checker Tests
+
+** Transition System
+First we check the QuickCheck generators to ensure that they are generating feasible transition systems and relevant satisfyability sets.
+#+BEGIN_SRC haskell
+prop_TSIsSquare :: Matrix Bool -> Bool
+prop_TSIsSquare m = nrows m == ncols m
+
+-- Check that generator for [Bool] works
+prop_BoolList :: [Bool] -> Bool
+prop_BoolList [] = True
+prop_BoolList (x:xs) = if (x /= True && x /= False) then False else prop_BoolList xs
+
+prop_TSRowLenEquivStatesLen :: [Bool] -> Matrix Bool -> Int -> Bool
+prop_TSRowLenEquivStatesLen sat ts = \n ->
+    if n > 0 && n < length sat
+        then length sat == length (getRow n ts)
+        else True
+
+prop_TSColLenEquivStatesLen :: [Bool] -> Matrix Bool -> Int -> Bool
+prop_TSColLenEquivStatesLen sat ts = \n ->
+    if n > 0 && n < length sat
+        then length sat == length (getCol n ts)
+        else True
+#+END_SRC
+
+*** Transitioning tests 
+#+BEGIN_SRC haskell
+prop_ExtendByReturnsInRange :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix a -> Int -> [a]) -> Bool
+prop_ExtendByReturnsInRange prior sat ts transition = foldr (&&) True inRange
+  where
+    posterior = stepByFunc prior sat ts transition
+    inRange = map (\x -> x > 0 && x <= nrows ts) posterior
+#+END_SRC
