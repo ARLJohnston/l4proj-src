@@ -5,6 +5,7 @@
 !LICENSE
 !*.cabal
 !*.nix
+!*.org
 !src
 !src/*.org
 !src/*.hs

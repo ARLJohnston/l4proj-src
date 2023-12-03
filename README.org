@@ -1,0 +1,13 @@
+#+TITLE: Model Checking from first principles
+#+Author: Alistair Johnston
+#+PROPERTY: header-args
+#+STARTUP: showeverything latexpreview
+#+OPTIONS: tex:t
+
+* Readme
+
+
+** Build Instructions
+Use of Cabal is recommended for builds, requirements are listed in [[./modelChecker.cabal]]
+
+Use cabal run to run the program
