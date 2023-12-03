@@ -1,0 +1,190 @@
+#+TITLE: Model Checking from first principles
+#+Author: Alistair Johnston
+#+PROPERTY: header-args :tangle CTL.hs
+#+auto_tangle: t
+#+STARTUP: showeverything latexpreview
+#+OPTIONS: toc:2 tex:t
+
+* File Header
+#+BEGIN_SRC haskell
+--module Main where
+
+import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix)
+import Data.Vector (Vector, toList)
+import Data.List (nub, findIndices, intersect, union)
+import Data.Bool
+#+END_SRC
+
+* Prerequisites to Model Checking
+Before we start to write a model checker we must first define some prerequisites:
+
+** Labelling Function
+A labelling function is what gives us which states satisfy $\Phi$, i.e. this is how we check $Sat(\Phi)$
+In terms of code it is sufficient to have a list of Boolean values which each map to a state.
+
+For example say we have states $s_0, s_1, s_2$ and $\Phi$ is defined as True if the state is even else Odd, then we can represent $Sat(\Phi)$ as:
+#+BEGIN_SRC haskell
+satPhi :: [Bool]
+satPhi = [True, False, True]
+#+END_SRC
+
+** Transition Systems
+A Transition System is the definition of which states are able to be reached from other states; this is effectively a graph representation of the state-space.
+
+For our use case it suffices to simply use an adjacency matrix defined as such:
+#+BEGIN_SRC haskell
+matrix :: Matrix Bool
+matrix = fromLists [[False, True, True],
+                    [False, False, True],
+                    [False, False, False]]
+#+END_SRC
+
+Additionally we need methods to check the set of states that we can reach from our current state, in an adjacency matrix we have:
+Predecessor(state) = column at state index
+Successor(state) = row at state index
+
+Which we can represent as such:
+#+BEGIN_SRC haskell
+pre :: Matrix a -> Int -> [a]
+pre m n = toList $ getCol (n+1) m
+
+post :: Matrix a -> Int -> [a] 
+post m n = toList $ getRow (n+1) m
+#+END_SRC
+
+* CTL Model Checking
+We start with CTL Model checking as the algorithms to perform CTL model checking are simpler than those used for other logic systems.
+
+It is sufficient for CTL model checking algorithms to be able to handle six cases:
+\begin{itemize}
+  \item $true$
+  \item $ap$
+  \item $\Phi_1 \wedge \Phi_2$
+  \item $\neg \Psi$
+  \item $\exists \textbf{X} \Psi$ - There exists some next timestep which satisfies $f_1$.
+  \item $\exists (\Phi U \Psi)$ - There exists some path where $Sat(\Phi)$ until $Sat(\Psi)$
+  \item $\exists \Box \Phi$ - There exists a path where $\Phi$ is always satisfied.
+\end{itemize}
+
+** CTL logic formulae
+First we need to define a CTL logic formula
+#+BEGIN_SRC haskell
+data CTLLogicFormula =
+    T
+  | AP
+  | And (CTLLogicFormula) (CTLLogicFormula)
+  | Not (CTLLogicFormula)
+  | ExistsNext (CTLLogicFormula)
+  | ExistsPhiUntilPsi (CTLLogicFormula) (CTLLogicFormula)
+  | ExistsAlwaysPhi (CTLLogicFormula)
+    deriving (Eq, Show)
+#+END_SRC
+
+Additionally we need some way of evaluating these formulae to a boolean
+#+BEGIN_SRC haskell
+evaluateCTLFormula :: CTLLogicFormula -> Matrix m -> [Bool] -> Bool
+evaluateCTLFormula (T) _ _ = True
+evaluateCTLFormula (AP) _ _ = undefined
+evaluateCTLFormula (And phi psi) m prior = (evaluateCTLFormula phi m prior) && (evaluateCTLFormula psi m prior)
+evaluateCTLFormula (Not phi) m prior = not (evaluateCTLFormula phi m prior)
+evaluateCTLFormula (ExistsNext phi) m prior = undefined --foldr (||) False (stepByFunc (evaluateCTLFormula phi) prior m (post)) 
+evaluateCTLFormula (ExistsPhiUntilPsi phi psi) m prior = undefined -- defined later
+evaluateCTLFormula (ExistsAlwaysPhi phi) m prior = undefined
+#+END_SRC
+
+** There exists some path where $\Phi$ is satisfied until $\Psi$
+The simplest case to check (past the trivial cases) is the case where we are interested in $Sat(\Exists(\Phi U \Psi))$.
+In this case we are given:
+ - The labelling functions: $Sat(\Phi)$ and $Sat(\Psi)$
+ -	A transition system TS
+ -	A set of states S
+
+The approach outlined in Principles of Model checking p351 involved making a choice of elements in the visited set of states and then extending it,
+however a simpler approach is to extend the set of states that we can reach by 1 timestep at each iteration, that is we apply pre to our set of reachable sets
+at each repetition.
+
+#+BEGIN_SRC haskell
+satPsi :: [Bool]
+satPsi = [False, False, True]
+#+END_SRC
+
+#+BEGIN_SRC haskell
+extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
+extendBy prior step m = posterior
+  where
+    vertices = findIndices (id) prior
+    vertices' = map (\x -> step m x) vertices
+    posterior = nub $ [ vv | uu <- map (findIndices (id)) vertices', vv <- uu]
+#+END_SRC
+
+In our previous transition system we can see that there are two paths that satisfy $\Exists(\Phi U \Psi)$: namely the paths $s_0 -> s_2$ and $s_2$ 
+#+BEGIN_SRC haskell
+stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
+stepByFunc [] _ _ _ = []
+stepByFunc prior labelling m step = posterior
+  where
+    vertices  = extendBy prior step m
+    reachable = filter (\x -> labelling !! x) vertices -- TODO: is there a more idiomatic way of doing this?
+    posterior = map (\x -> labelling !! x) reachable
+
+existsPhiUntilPsi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
+existsPhiUntilPsi matrix [] satisfy = satisfy
+existsPhiUntilPsi matrix satPhi [] = []
+existsPhiUntilPsi matrix satPhi satisfy =
+  if satisfy' == satisfy
+    then satisfy
+    else existsPhiUntilPsi matrix satPhi satisfy'
+  where
+    satisfy' = nub $ satisfy `union` stepByFunc satisfy satPsi matrix (pre)
+#+END_SRC
+
+* $\exists \Box \Phi$
+Start with all states where $Sat(\Phi)$, repeatedly recurse (stepping forward in the graph) until we get either a repeat or empty set (as before)
+At each iteration we get Just the result of the forward step (as opposed to $\exists \Phi U \Psi$ where we took the union of the prior and posterior)
+If we get a repeat then True if empty then False
+
+#+BEGIN_SRC haskell
+existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
+existsAlwaysPhi matrix [] satisfy = []
+existsAlwaysPhi matrix satPhi [] = []
+existsAlwaysPhi matrix satPhi satisfy =
+  if satisfy' == satisfy
+    then satisfy
+    else existsAlwaysPhi matrix satPhi satisfy'
+  where
+    satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix (post)
+#+END_SRC
+
+* Code I am afraid to delete 
+#+BEGIN_SRC haskell
+--extendBy :: [Bool] -> [Bool] -> Matrix Bool -> [Bool]
+-- If we do not have any states in the prior then we cannot extend them
+--extendBy [] _ _ = []
+-- If we do not have any states fulfilling our labelling function, then just return the prior
+--extendBy prior [] _ = prior
+-- extendBy prior labelling m = posterior
+--extendBy prior labelling m = posterior
+--  where
+--    currentSetVertices = findIndices (id) prior
+--    --- Get the pre lists for each state in the current set
+--    predecessors = map (\x -> pre m x) currentSetVertices
+--    -- Flatten and remove duplicates from the reachable predecessors
+--    reachableStates = nub $ [ y | x <- map (findIndices (id)) predecessors, y <- x]
+--    reachableStatesSatisfyingLabelling = filter (\x -> labelling !! x) reachableStates
+--    posterior = nub $ reachableStatesSatisfyingLabelling ++ prior
+
+-- DRY Violated - code smell
+--stepForwards :: [Bool] -> [Bool] -> Matrix Bool -> [Bool]
+--stepForwards [] _ _ = []
+--stepForwards prior labelling m = posterior
+--  where
+--    vertices = extendBy prior post m
+--    vertices' = filter (\x -> labelling !! x) vertices
+--
+--stepBackwards :: [Bool] -> [Bool] -> Matrix Bool -> [Bool]
+--stepBackwards [] _ _ = []
+--stepBackwards prior labelling m = posterior
+--  where
+--    vertices = extendBy prior pre m
+--    vertices'= filter (\x -> labelling !! x) vertices
+#+END_SRC
