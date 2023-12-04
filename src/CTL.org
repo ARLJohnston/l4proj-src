@@ -115,7 +115,7 @@ extendBy prior step m = posterior
     posterior = nub $ [ vv | uu <- map (findIndices (id)) vertices', vv <- uu]
 #+END_SRC
 
-In our previous transition system we can see that there are two paths that satisfy $\Exists(\Phi U \Psi)$: namely the paths $s_0 \rightarrow s_2$ and $s_2$ 
+In our previous transition system we can see that there are two paths that satisfy $\exists(\Phi U \Psi)$: namely the paths $s_0 \rightarrow s_2$ and $s_2$ 
 #+BEGIN_SRC haskell
 stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
 stepByFunc [] _ _ _ = []
