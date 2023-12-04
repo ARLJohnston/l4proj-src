@@ -75,34 +75,3 @@ existsAlwaysPhi matrix satPhi satisfy =
     else existsAlwaysPhi matrix satPhi satisfy'
   where
     satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix (post)
-
---extendBy :: [Bool] -> [Bool] -> Matrix Bool -> [Bool]
--- If we do not have any states in the prior then we cannot extend them
---extendBy [] _ _ = []
--- If we do not have any states fulfilling our labelling function, then just return the prior
---extendBy prior [] _ = prior
--- extendBy prior labelling m = posterior
---extendBy prior labelling m = posterior
---  where
---    currentSetVertices = findIndices (id) prior
---    --- Get the pre lists for each state in the current set
---    predecessors = map (\x -> pre m x) currentSetVertices
---    -- Flatten and remove duplicates from the reachable predecessors
---    reachableStates = nub $ [ y | x <- map (findIndices (id)) predecessors, y <- x]
---    reachableStatesSatisfyingLabelling = filter (\x -> labelling !! x) reachableStates
---    posterior = nub $ reachableStatesSatisfyingLabelling ++ prior
-
--- DRY Violated - code smell
---stepForwards :: [Bool] -> [Bool] -> Matrix Bool -> [Bool]
---stepForwards [] _ _ = []
---stepForwards prior labelling m = posterior
---  where
---    vertices = extendBy prior post m
---    vertices' = filter (\x -> labelling !! x) vertices
---
---stepBackwards :: [Bool] -> [Bool] -> Matrix Bool -> [Bool]
---stepBackwards [] _ _ = []
---stepBackwards prior labelling m = posterior
---  where
---    vertices = extendBy prior pre m
---    vertices'= filter (\x -> labelling !! x) vertices
