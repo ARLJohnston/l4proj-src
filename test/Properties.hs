@@ -1,11 +1,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverlappingInstances #-}
+module Tests where
 
 import Test.QuickCheck
+import CTL
 
-import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix)
+import Data.Matrix (Matrix, fromLists, fromList, getCol, getRow, prettyMatrix, nrows, ncols)
 import Data.Vector (Vector, toList)
-import Data.List (nub, findIndices, intersect, union, isSubsequenceOf)
+import Data.List (nub, findIndices, intersect, union)
 import Data.Bool
 
 instance Arbitrary (Matrix Bool) where

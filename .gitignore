@@ -3,8 +3,9 @@
 
 #Now add back what we want
 !LICENSE
-!*.cabal
+!modelChecker.cabal
 !*.nix
+!flake.*
 !*.org
 !src
 !src/*.org

@@ -3,22 +3,20 @@
 #+PROPERTY: header-args :tangle Properties.hs
 #+auto_tangle: t
 #+STARTUP: showeverything latexpreview
-#+OPTIONS: toc:2 tex:t
-
-:LOGBOOK:
-CLOCK: [2023-12-03 Sun 12:00]--[2023-12-03 Sun 12:30] =>  0:30 - Generators
-:END:
+#+OPTIONS: tex:t
 
 * File Header
 #+BEGIN_SRC haskell
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverlappingInstances #-}
+module Tests where
 
 import Test.QuickCheck
+import CTL
 
-import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix)
+import Data.Matrix (Matrix, fromLists, fromList, getCol, getRow, prettyMatrix, nrows, ncols)
 import Data.Vector (Vector, toList)
-import Data.List (nub, findIndices, intersect, union, isSubsequenceOf)
+import Data.List (nub, findIndices, intersect, union)
 import Data.Bool
 #+END_SRC
 

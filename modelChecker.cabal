@@ -7,18 +7,39 @@ maintainer:      2560836j@student.gla.ac.uk
 build-type:      Simple
 
 common warnings
-    ghc-options: -Wall
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints 
 
-executable example
-    import:           warnings
-    main-is:          Main.hs
-    build-depends:    
-      base ^>= 4.17.2.0,
-      QuickCheck ^>= 2.14.2,
-      diagrams-lib,
-      diagrams-svg,
-      matrix ^>= 0.3.6.1,
-      vector
+library
+  exposed-modules:
+    Main
+  build-depends:    
+    base ^>= 4.17.2.0,
+    matrix ^>= 0.3.6.1,
+    vector
+  hs-source-dirs: src
 
-    hs-source-dirs:   src
-    default-language: Haskell2010
+executable modelChecker
+  import:           warnings
+  main-is:          CTL.hs
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:    
+    base ^>= 4.17.2.0,
+    diagrams-lib,
+    diagrams-svg,
+    matrix ^>= 0.3.6.1,
+    vector
+
+  hs-source-dirs:   src
+  default-language: Haskell2010
+
+test-suite  modelChecker-test
+  type: exitcode-stdio-1.0
+  main-is: Properties.hs
+  build-depends:    
+    base ^>= 4.17.2.0,
+    QuickCheck ^>= 2.14.2,
+    matrix ^>= 0.3.6.1,
+    vector
+
+  hs-source-dirs:   src, test
+  default-language: Haskell2010

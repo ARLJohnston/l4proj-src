@@ -1,6 +1,6 @@
---module Main where
+module CTL(module CTL) where
 
-import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix)
+import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix, nrows, ncols)
 import Data.Vector (Vector, toList)
 import Data.List (nub, findIndices, intersect, union)
 import Data.Bool
