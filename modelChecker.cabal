@@ -13,7 +13,7 @@ library
   exposed-modules:
     CTL
   build-depends:    
-    base >= 4.17.2.0,
+    base >= 4.14.1.0,
     matrix >= 0.3.6.1,
     vector
   hs-source-dirs: src
@@ -24,7 +24,7 @@ executable modelChecker
   main-is:          CTL.hs
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:    
-    base >= 4.17.2.0,
+    base >= 4.14.1.0,
     diagrams-lib,
     diagrams-svg,
     matrix >= 0.3.6.1,
@@ -37,7 +37,7 @@ test-suite  modelChecker-test
   type: exitcode-stdio-1.0
   main-is: Properties.hs
   build-depends:    
-    base >= 4.17.2.0,
+    base >= 4.14.1.0,
     QuickCheck >= 2.14.2,
     matrix >= 0.3.6.1,
     vector
