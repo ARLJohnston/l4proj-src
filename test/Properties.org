@@ -5,6 +5,10 @@
 #+STARTUP: showeverything latexpreview
 #+OPTIONS: tex:t
 
+:LOGBOOK:
+CLOCK: [2023-12-03 Sun 12:00]--[2023-12-03 Sun 12:30] =>  0:30 - Generators
+:END:
+
 * File Header
 #+BEGIN_SRC haskell
 {-# LANGUAGE FlexibleInstances #-}
