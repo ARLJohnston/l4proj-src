@@ -75,3 +75,6 @@ existsAlwaysPhi matrix satPhi satisfy =
     else existsAlwaysPhi matrix satPhi satisfy'
   where
     satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix (post)
+
+main :: IO ()
+main = do putStrLn "Compilation succeeded"

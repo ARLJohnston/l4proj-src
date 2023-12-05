@@ -152,3 +152,11 @@ existsAlwaysPhi matrix satPhi satisfy =
   where
     satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix (post)
 #+END_SRC
+
+* Main
+#+BEGIN_SRC haskell
+main :: IO ()
+main = do putStrLn "Compilation succeeded"
+#+END_SRC
+
+
