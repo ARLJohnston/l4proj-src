@@ -22,17 +22,17 @@ post m n = toList $ getRow (n+1) m
 data CTLLogicFormula =
     T
   | AP
-  | And (CTLLogicFormula) (CTLLogicFormula)
-  | Not (CTLLogicFormula)
-  | ExistsNext (CTLLogicFormula)
-  | ExistsPhiUntilPsi (CTLLogicFormula) (CTLLogicFormula)
-  | ExistsAlwaysPhi (CTLLogicFormula)
+  | And CTLLogicFormula CTLLogicFormula
+  | Not CTLLogicFormula
+  | ExistsNext CTLLogicFormula
+  | ExistsPhiUntilPsi CTLLogicFormula CTLLogicFormula
+  | ExistsAlwaysPhi CTLLogicFormula
     deriving (Eq, Show)
 
 evaluateCTLFormula :: CTLLogicFormula -> Matrix m -> [Bool] -> Bool
-evaluateCTLFormula (T) _ _ = True
-evaluateCTLFormula (AP) _ _ = undefined
-evaluateCTLFormula (And phi psi) m prior = (evaluateCTLFormula phi m prior) && (evaluateCTLFormula psi m prior)
+evaluateCTLFormula T _ _ = True
+evaluateCTLFormula AP _ _ = undefined
+evaluateCTLFormula (And phi psi) m prior = evaluateCTLFormula phi m prior && (evaluateCTLFormula psi m prior)
 evaluateCTLFormula (Not phi) m prior = not (evaluateCTLFormula phi m prior)
 evaluateCTLFormula (ExistsNext phi) m prior = undefined --foldr (||) False (stepByFunc (evaluateCTLFormula phi) prior m (post)) 
 evaluateCTLFormula (ExistsPhiUntilPsi phi psi) m prior = undefined -- defined later

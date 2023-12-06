@@ -70,20 +70,20 @@ First we need to define a CTL logic formula
 data CTLLogicFormula =
     T
   | AP
-  | And (CTLLogicFormula) (CTLLogicFormula)
-  | Not (CTLLogicFormula)
-  | ExistsNext (CTLLogicFormula)
-  | ExistsPhiUntilPsi (CTLLogicFormula) (CTLLogicFormula)
-  | ExistsAlwaysPhi (CTLLogicFormula)
+  | And CTLLogicFormula CTLLogicFormula
+  | Not CTLLogicFormula
+  | ExistsNext CTLLogicFormula
+  | ExistsPhiUntilPsi CTLLogicFormula CTLLogicFormula
+  | ExistsAlwaysPhi CTLLogicFormula
     deriving (Eq, Show)
 #+END_SRC
 
 Additionally we need some way of evaluating these formulae to a boolean
 #+BEGIN_SRC haskell
 evaluateCTLFormula :: CTLLogicFormula -> Matrix m -> [Bool] -> Bool
-evaluateCTLFormula (T) _ _ = True
-evaluateCTLFormula (AP) _ _ = undefined
-evaluateCTLFormula (And phi psi) m prior = (evaluateCTLFormula phi m prior) && (evaluateCTLFormula psi m prior)
+evaluateCTLFormula T _ _ = True
+evaluateCTLFormula AP _ _ = undefined
+evaluateCTLFormula (And phi psi) m prior = evaluateCTLFormula phi m prior && (evaluateCTLFormula psi m prior)
 evaluateCTLFormula (Not phi) m prior = not (evaluateCTLFormula phi m prior)
 evaluateCTLFormula (ExistsNext phi) m prior = undefined --foldr (||) False (stepByFunc (evaluateCTLFormula phi) prior m (post)) 
 evaluateCTLFormula (ExistsPhiUntilPsi phi psi) m prior = undefined -- defined later
