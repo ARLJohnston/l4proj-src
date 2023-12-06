@@ -16,6 +16,7 @@ import Test.QuickCheck
 import Test.QuickCheck (quickCheckAll)
 import Control.Monad
 import System.Exit (exitSuccess, exitFailure)
+
 import CTL
 
 import Data.Matrix (Matrix, fromLists, fromList, getCol, getRow, prettyMatrix, nrows, ncols)
@@ -37,9 +38,6 @@ instance {-# OVERLAPPING #-} Arbitrary [Bool] where
   arbitrary = do
     n <- getSize
     vectorOf n arbitrary
-
---instance Arbitrary (Matrix Bool -> Int -> [Bool]) where
---  arbitrary = oneof [return pre, return post]
 #+END_SRC
 
 * CTL Model Checker Tests
@@ -80,7 +78,6 @@ prop_ExtendByInRangePost prior m = length (filter (\x -> x >= 0 && x <= nrows m)
   where
     posterior = extendBy prior post m
 #+END_SRC
-
 
 * Main method for running tests
 #+BEGIN_SRC haskell
