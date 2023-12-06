@@ -1,8 +1,12 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverlappingInstances #-}
-module Tests where
+module Main where
 
 import Test.QuickCheck
+import Test.QuickCheck (quickCheckAll)
+import Control.Monad
+import System.Exit (exitSuccess, exitFailure)
 import CTL
 
 import Data.Matrix (Matrix, fromLists, fromList, getCol, getRow, prettyMatrix, nrows, ncols)
@@ -22,8 +26,8 @@ instance {-# OVERLAPPING #-} Arbitrary [Bool] where
     n <- getSize
     vectorOf n arbitrary
 
-instance {-# OVERLAPPING #-} Arbitrary (Matrix a -> Int -> [a]) where
-  arbitrary = oneof [return pre, return post]
+--instance Arbitrary (Matrix Bool -> Int -> [Bool]) where
+--  arbitrary = oneof [return pre, return post]
 
 prop_TSIsSquare :: Matrix Bool -> Bool
 prop_TSIsSquare m = nrows m == ncols m
@@ -45,8 +49,24 @@ prop_TSColLenEquivStatesLen sat ts = \n ->
         then length sat == length (getCol n ts)
         else True
 
-prop_ExtendByReturnsInRange :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix a -> Int -> [a]) -> Bool
-prop_ExtendByReturnsInRange prior sat ts transition = foldr (&&) True inRange
+prop_ExtendByInRangePre :: [Bool] -> Matrix Bool -> Bool
+prop_ExtendByInRangePre prior m = length (filter (\x -> x >= 0 && x <= nrows m) posterior) == length posterior
   where
-    posterior = stepByFunc prior sat ts transition
-    inRange = map (\x -> x > 0 && x <= nrows ts) posterior
+    posterior = extendBy prior pre m
+
+prop_ExtendByInRangePost :: [Bool] -> Matrix Bool -> Bool
+prop_ExtendByInRangePost prior m = length (filter (\x -> x >= 0 && x <= nrows m) posterior) == length posterior
+  where
+    posterior = extendBy prior post m
+
+-- Template Haskell requires this line for use of quickCheckAll
+$(return [])
+
+main :: IO ()
+main = do
+  putStrLn "Running Tests"
+  success <- $(quickCheckAll)
+  if success then
+    putStrLn "All tests passed!" >> exitSuccess 
+  else
+    putStrLn "Some tests failed." >> exitFailure
