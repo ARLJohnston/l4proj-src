@@ -32,7 +32,7 @@ data CTLLogicFormula =
 evaluateCTLFormula :: CTLLogicFormula -> Matrix m -> [Bool] -> Bool
 evaluateCTLFormula T _ _ = True
 evaluateCTLFormula AP _ _ = undefined
-evaluateCTLFormula (And phi psi) m prior = evaluateCTLFormula phi m prior && (evaluateCTLFormula psi m prior)
+evaluateCTLFormula (And phi psi) m prior = evaluateCTLFormula phi m prior && evaluateCTLFormula psi m prior
 evaluateCTLFormula (Not phi) m prior = not (evaluateCTLFormula phi m prior)
 evaluateCTLFormula (ExistsNext phi) m prior = undefined --foldr (||) False (stepByFunc (evaluateCTLFormula phi) prior m (post)) 
 evaluateCTLFormula (ExistsPhiUntilPsi phi psi) m prior = undefined -- defined later
@@ -44,17 +44,17 @@ satPsi = [False, False, True]
 extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
 extendBy prior step m = posterior
   where
-    vertices = findIndices (id) prior
-    vertices' = map (\x -> step m x) vertices
-    posterior = nub $ [ vv | uu <- map (findIndices (id)) vertices', vv <- uu]
+    vertices = findIndices id prior
+    vertices' = map (step m) vertices
+    posterior = nub $ [ vv | uu <- map (findIndices id) vertices', vv <- uu]
 
 stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
 stepByFunc [] _ _ _ = []
 stepByFunc prior labelling m step = posterior
   where
     vertices  = extendBy prior step m
-    reachable = filter (\x -> labelling !! x) vertices -- TODO: is there a more idiomatic way of doing this?
-    posterior = map (\x -> labelling !! x) reachable
+    reachable = filter (labelling !!) vertices -- TODO: is there a more idiomatic way of doing this?
+    posterior = map (labelling !!) reachable
 
 existsPhiUntilPsi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
 existsPhiUntilPsi matrix [] satisfy = satisfy
@@ -64,7 +64,7 @@ existsPhiUntilPsi matrix satPhi satisfy =
     then satisfy
     else existsPhiUntilPsi matrix satPhi satisfy'
   where
-    satisfy' = nub $ satisfy `union` stepByFunc satisfy satPsi matrix (pre)
+    satisfy' = nub $ satisfy `union` stepByFunc satisfy satPsi matrix pre
 
 existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
 existsAlwaysPhi matrix [] satisfy = []
@@ -74,4 +74,4 @@ existsAlwaysPhi matrix satPhi satisfy =
     then satisfy
     else existsAlwaysPhi matrix satPhi satisfy'
   where
-    satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix (post)
+    satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix post
