@@ -66,12 +66,11 @@ existsPhiUntilPsi matrix satPhi satisfy =
   where
     satisfy' = nub $ satisfy `union` stepByFunc satisfy satPsi matrix (pre)
 
-existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
-existsAlwaysPhi matrix [] satisfy = []
-existsAlwaysPhi matrix satPhi [] = []
-existsAlwaysPhi matrix satPhi satisfy =
+existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool]
+existsAlwaysPhi matrix [] = []
+existsAlwaysPhi matrix satisfy =
   if satisfy' == satisfy
     then satisfy
-    else existsAlwaysPhi matrix satPhi satisfy'
+    else existsAlwaysPhi matrix satisfy'
   where
-    satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix (post)
+    satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satisfy matrix (post)
