@@ -16,7 +16,7 @@ import Data.Bool
 transitionSystem :: Matrix Bool
 transitionSystem = ts
   where
-    base = replicate 8 False
+    base = Data.Vector.replicate 8 False
     s_0 = rowVector (base // [(2, True)])
     s_1 = rowVector (base // [(3, True)])
     s_2 = rowVector (base // [(0, True), (1, True)])
@@ -30,7 +30,7 @@ transitionSystem = ts
 satA :: [Bool]
 satA = toList $ replicate 8 False // [(0, True), (1, True), (3, True), (5, True)]
 satB :: [Bool]
-satB = toList $ replicate 8 False // [(0, True), (1, True), (2, True), (4,True)]
+satB = toList $ Data.Vector.replicate 8 False // [(0, True), (1, True), (2, True), (4,True)]
 satC :: [Bool]
 satC = toList $ replicate 8 False // [(0, True), (2, True), (5, True), (6, True)]
 
@@ -52,7 +52,7 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
     -- , testCase "" $ @?=
     -- , testCase "" $ @?=
     , testExistsAlwaysPhi
-    , testCase "Exists A until C" $ existsPhiUntilPsi transitionSystem satA satC @?= (toList $ base // [(0, True), (1, True), (3, True), (4, True)])
+    , testCase "Exists A until C" $ existsPhiUntilPsi transitionSystem satA satC @?= (toList $ base // [(0, True), (1, True), (2, True), (3, True), (5, True), (6, True)])
   ]
   where
     base = replicate 8 False
