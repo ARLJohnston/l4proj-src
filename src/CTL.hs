@@ -44,9 +44,9 @@ evaluateCTLFormula (ExistsAlwaysPhi phi) m prior = undefined
 extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
 extendBy prior step m = posterior
   where
-    vertices = findIndices (id) prior
+    vertices = findIndices id prior
     vertices' = map (step m) vertices
-    posterior = nub $ [ vv | uu <- map (findIndices (id)) vertices', vv <- uu]
+    posterior = nub $ [ vv | uu <- map (findIndices id) vertices', vv <- uu]
 
 stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
 stepByFunc [] _ _ _ = []

@@ -110,9 +110,9 @@ at each repetition.
 extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
 extendBy prior step m = posterior
   where
-    vertices = findIndices (id) prior
+    vertices = findIndices id prior
     vertices' = map (step m) vertices
-    posterior = nub $ [ vv | uu <- map (findIndices (id)) vertices', vv <- uu]
+    posterior = nub $ [ vv | uu <- map (findIndices id) vertices', vv <- uu]
 #+END_SRC
 
 In our previous transition system we can see that there are two paths that satisfy $\exists(\Phi U \Psi)$: namely the paths $s_0 \rightarrow s_2$ and $s_2$ 
