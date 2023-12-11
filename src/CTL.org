@@ -11,7 +11,7 @@ module CTL(module CTL) where
 
 import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix, nrows, ncols)
 import Data.Vector (Vector, toList)
-import Data.List (nub, findIndices, intersect, union)
+import Data.List (nub, findIndices, elem)
 import Data.Bool
 #+END_SRC
 
@@ -24,8 +24,8 @@ In terms of code it is sufficient to have a list of Boolean values which each ma
 
 For example say we have states $s_0, s_1, s_2$ and $\Phi$ is defined as True if the state is even else Odd, then we can represent $Sat(\Phi)$ as:
 #+BEGIN_SRC haskell
-satPhi :: [Bool]
-satPhi = [True, False, True]
+--satPhi :: [Bool]
+--satPhi = [True, False, True]
 #+END_SRC
 
 ** Transition Systems
@@ -33,10 +33,10 @@ A Transition System is the definition of which states are able to be reached fro
 
 For our use case it suffices to simply use an adjacency matrix defined as such:
 #+BEGIN_SRC haskell
-matrix :: Matrix Bool
-matrix = fromLists [[False, True, True],
-                    [False, False, True],
-                    [False, False, False]]
+--matrix :: Matrix Bool
+--matrix = fromLists [[False, True, True],
+--                    [False, False, True],
+--                    [False, False, False]]
 #+END_SRC
 
 Additionally we need methods to check the set of states that we can reach from our current state, in an adjacency matrix we have:
@@ -102,8 +102,8 @@ however a simpler approach is to extend the set of states that we can reach by 1
 at each repetition.
 
 #+BEGIN_SRC haskell
-satPsi :: [Bool]
-satPsi = [False, False, True]
+--satPsi :: [Bool]
+--satPsi = [False, False, True]
 #+END_SRC
 
 #+BEGIN_SRC haskell
@@ -121,9 +121,11 @@ stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) 
 stepByFunc [] _ _ _ = []
 stepByFunc prior labelling m step = posterior
   where
+--States we can reach
     vertices  = extendBy prior step m
-    reachable = filter (labelling !!) vertices -- TODO: is there a more idiomatic way of doing this?
-    posterior = map (labelling !!) reachable
+--Filter to states where the predicate is true
+    reachable = filter (labelling !!) vertices
+    posterior = [x `elem` reachable | x <- [0..length prior - 1]]
 
 existsPhiUntilPsi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
 existsPhiUntilPsi matrix [] satisfy = satisfy
@@ -133,22 +135,23 @@ existsPhiUntilPsi matrix satPhi satisfy =
     then satisfy
     else existsPhiUntilPsi matrix satPhi satisfy'
   where
-    satisfy' = nub $ satisfy `union` stepByFunc satisfy satPsi matrix pre
+    nextStep =  stepByFunc satisfy satPhi matrix pre
+    satisfy' = [ (satisfy !! x) || (nextStep !! x) | x <- [0..length satisfy - 1]]
 #+END_SRC
 
 * $\exists \Box \Phi$
-Start with all states where $Sat(\Phi)$, repeatedly recurse (stepping forward in the graph) until we get either a repeat or empty set (as before)
-At each iteration we get Just the result of the forward step (as opposed to $\exists \Phi U \Psi$ where we took the union of the prior and posterior)
+Start with all states where $Sat(\Phi)$, repeatedly recurse (stepping back in the graph) until we get either a repeat or empty set (as before)
+At each iteration we get Just the result of the backward step (as opposed to $\exists \Phi U \Psi$ where we took the union of the prior and posterior)
 If we get a repeat then True if empty then False
 
 #+BEGIN_SRC haskell
-existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
-existsAlwaysPhi matrix [] satisfy = []
-existsAlwaysPhi matrix satPhi [] = []
-existsAlwaysPhi matrix satPhi satisfy =
+existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool]
+existsAlwaysPhi matrix [] = []
+existsAlwaysPhi matrix satisfy =
   if satisfy' == satisfy
     then satisfy
-    else existsAlwaysPhi matrix satPhi satisfy'
+    else existsAlwaysPhi matrix satisfy'
   where
-    satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix post
+    nextStep =  stepByFunc satisfy satisfy matrix pre
+    satisfy' = [ (satisfy !! x) && (nextStep !! x) | x <- [0..length satisfy - 1]]
 #+END_SRC

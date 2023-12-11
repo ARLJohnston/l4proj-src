@@ -7,6 +7,7 @@ import Test.QuickCheck
 import Test.QuickCheck (quickCheckAll)
 import Control.Monad
 import System.Exit (exitSuccess, exitFailure)
+
 import CTL
 
 import Data.Matrix (Matrix, fromLists, fromList, getCol, getRow, prettyMatrix, nrows, ncols)
@@ -25,9 +26,6 @@ instance {-# OVERLAPPING #-} Arbitrary [Bool] where
   arbitrary = do
     n <- getSize
     vectorOf n arbitrary
-
---instance Arbitrary (Matrix Bool -> Int -> [Bool]) where
---  arbitrary = oneof [return pre, return post]
 
 prop_TSIsSquare :: Matrix Bool -> Bool
 prop_TSIsSquare m = nrows m == ncols m

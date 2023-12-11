@@ -2,16 +2,16 @@ module CTL(module CTL) where
 
 import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix, nrows, ncols)
 import Data.Vector (Vector, toList)
-import Data.List (nub, findIndices, intersect, union)
+import Data.List (nub, findIndices, elem)
 import Data.Bool
 
-satPhi :: [Bool]
-satPhi = [True, False, True]
+--satPhi :: [Bool]
+--satPhi = [True, False, True]
 
-matrix :: Matrix Bool
-matrix = fromLists [[False, True, True],
-                    [False, False, True],
-                    [False, False, False]]
+--matrix :: Matrix Bool
+--matrix = fromLists [[False, True, True],
+--                    [False, False, True],
+--                    [False, False, False]]
 
 pre :: Matrix a -> Int -> [a]
 pre m n = toList $ getCol (n+1) m
@@ -38,8 +38,8 @@ evaluateCTLFormula (ExistsNext phi) m prior = undefined --foldr (||) False (step
 evaluateCTLFormula (ExistsPhiUntilPsi phi psi) m prior = undefined -- defined later
 evaluateCTLFormula (ExistsAlwaysPhi phi) m prior = undefined
 
-satPsi :: [Bool]
-satPsi = [False, False, True]
+--satPsi :: [Bool]
+--satPsi = [False, False, True]
 
 extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
 extendBy prior step m = posterior
@@ -52,9 +52,11 @@ stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) 
 stepByFunc [] _ _ _ = []
 stepByFunc prior labelling m step = posterior
   where
+--States we can reach
     vertices  = extendBy prior step m
-    reachable = filter (labelling !!) vertices -- TODO: is there a more idiomatic way of doing this?
-    posterior = map (labelling !!) reachable
+--Filter to states where the predicate is true
+    reachable = filter (labelling !!) vertices
+    posterior = [x `elem` reachable | x <- [0..length prior - 1]]
 
 existsPhiUntilPsi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
 existsPhiUntilPsi matrix [] satisfy = satisfy
@@ -64,14 +66,15 @@ existsPhiUntilPsi matrix satPhi satisfy =
     then satisfy
     else existsPhiUntilPsi matrix satPhi satisfy'
   where
-    satisfy' = nub $ satisfy `union` stepByFunc satisfy satPsi matrix pre
+    nextStep =  stepByFunc satisfy satPhi matrix pre
+    satisfy' = [ (satisfy !! x) || (nextStep !! x) | x <- [0..length satisfy - 1]]
 
-existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
-existsAlwaysPhi matrix [] satisfy = []
-existsAlwaysPhi matrix satPhi [] = []
-existsAlwaysPhi matrix satPhi satisfy =
+existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool]
+existsAlwaysPhi matrix [] = []
+existsAlwaysPhi matrix satisfy =
   if satisfy' == satisfy
     then satisfy
-    else existsAlwaysPhi matrix satPhi satisfy'
+    else existsAlwaysPhi matrix satisfy'
   where
-    satisfy' = nub $ satisfy `intersect` stepByFunc satisfy satPsi matrix post
+    nextStep =  stepByFunc satisfy satisfy matrix pre
+    satisfy' = [ (satisfy !! x) && (nextStep !! x) | x <- [0..length satisfy - 1]]
