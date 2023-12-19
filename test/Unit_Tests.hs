@@ -34,28 +34,105 @@ satB = toList $ Data.Vector.replicate 8 False // [(0, True), (1, True), (2, True
 satC :: [Bool]
 satC = toList $ replicate 8 False // [(0, True), (2, True), (5, True), (6, True)]
 
-testExistsAlwaysPhi :: TestTree
-testExistsAlwaysPhi  = testCase "Exists Always B" $ existsAlwaysPhi transitionSystem satB @?= (toList $ base // [(0, True), (2, True), (4, True)])
+testTrue :: TestTree
+testTrue = testCase "B" $  predicateIsTrue satB @?= (toList $ base // [(0, True), (1, True), (2, True), (4, True)])
   where
     base = replicate 8 False
-    
+
+testAnd  :: TestTree
+testAnd = testCase "A and C" $ predicateAnd satA satC @?= (toList $ base // [(0, True), (5, True)])
+  where
+    base = replicate 8 False
+
+testNot :: TestTree
+testNot = testCase "Not A" $ predicateNot satA @?= (toList $ base // [(2, True), (4, True), (6, True), (7, True)])
+  where
+    base = replicate 8 False
+
+testExistsNext :: TestTree
+testExistsNext = testCase "Exists next A" $ existsNextPhi transitionSystem satA @?= (toList $ base // [(1, True), (2, True), (3, True), (4, True), (5, True), (7, True)])
+  where
+    base = replicate 8 False
+
+testExistsAlwaysPhi :: TestTree
+testExistsAlwaysPhi = testCase "Exists Always B" $ existsAlwaysPhi transitionSystem satB @?= (toList $ base // [(0, True), (2, True), (4, True)])
+  where
+    base = replicate 8 False
+
+testExistsPhiUntilPsi :: TestTree
+testExistsPhiUntilPsi = testCase "Exists A until C" $ existsPhiUntilPsi transitionSystem satA satC @?= (toList $ base // [(0, True), (1, True), (2, True), (3, True), (5, True), (6, True)])
+  where
+    base = replicate 8 False
 
 transitionSystemTests :: TestTree
-transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 in Principles of Model Checking"
+transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 in Principles of Model Checking (Direct use of function)"
   [
-      testCase "2+2" $ 2 + 2 @?= 4
-    , testCase "Pre on 6.11" $ transitionSystem `pre` 0 @?= (toList $ base // [(2, True), (3, True), (4, True)])
+      testCase "Pre on 6.11" $ transitionSystem `pre` 0 @?= (toList $ base // [(2, True), (3, True), (4, True)])
     , testCase "Post on 6.11" $ transitionSystem `post` 7 @?= (toList $ base // [(3, True), (6, True)])
     -- 6 Cases for CTL model Checking
-    -- , testCase "" $ @?=
-    -- , testCase "" $ @?=
-    -- , testCase "" $ @?=
-    -- , testCase "" $ @?=
+    , testTrue
+    , testAnd
+    , testNot
+    , testExistsNext
     , testExistsAlwaysPhi
-    , testCase "Exists A until C" $ existsPhiUntilPsi transitionSystem satA satC @?= (toList $ base // [(0, True), (1, True), (2, True), (3, True), (5, True), (6, True)])
+    , testExistsPhiUntilPsi
   ]
   where
     base = replicate 8 False
+
+satA_CTL :: CTLFormula
+satA_CTL = Satisfaction satA
+		
+satB_CTL :: CTLFormula
+satB_CTL = Satisfaction satB
+		
+satC_CTL :: CTLFormula
+satC_CTL = Satisfaction satC
+
+testSatisfy_CTL :: TestTree
+testSatisfy_CTL = testCase "Eval (B)" $ evaluateCTL satB_CTL transitionSystem @?= (toList $ base // [(0, True), (1, True), (2, True), (4, True)])
+  where
+    base = replicate 8 False
+
+testAnd_CTL  :: TestTree
+testAnd_CTL = testCase "Eval (A^C)" $ evaluateCTL (And satA_CTL satC_CTL) transitionSystem @?= (toList $ base // [(0, True), (5, True)])
+  where
+    base = replicate 8 False
+
+testNot_CTL :: TestTree
+testNot_CTL = testCase "Eval (¬A)" $ evaluateCTL (Not satA_CTL) transitionSystem @?= (toList $ base // [(2, True), (4, True), (6, True), (7, True)])
+  where
+    base = replicate 8 False
+
+testExistsNext_CTL :: TestTree
+testExistsNext_CTL = testCase "Eval (∃XA)" $ evaluateCTL (ExistsNext satA_CTL) transitionSystem @?= (toList $ base // [(1, True), (2, True), (3, True), (4, True), (5, True), (7, True)])
+  where
+    base = replicate 8 False
+
+testExistsAlwaysPhi_CTL :: TestTree
+testExistsAlwaysPhi_CTL = testCase "Eval (∃☐B)" $ evaluateCTL (ExistsAlwaysPhi satB_CTL) transitionSystem @?= (toList $ base // [(0, True), (2, True), (4, True)])
+  where
+    base = replicate 8 False
+
+testExistsPhiUntilPsi_CTL :: TestTree
+testExistsPhiUntilPsi_CTL = testCase "Eval (∃AUC)" $ evaluateCTL (ExistsPhiUntilPsi satA_CTL satC_CTL) transitionSystem @?= (toList $ base // [(0, True), (1, True), (2, True), (3, True), (5, True), (6, True)])
+  where
+    base = replicate 8 False
+
+individualCases :: TestTree
+individualCases = testGroup "Tests on Transition System from Figure 6.11 in Principles of Model Checking (Using EvaluateCTL)"
+  [
+      testSatisfy_CTL
+    , testAnd_CTL
+    , testNot_CTL
+    , testExistsNext_CTL
+    , testExistsAlwaysPhi_CTL
+    , testExistsPhiUntilPsi_CTL
+  ]
+  where
+    base = replicate 8 False
+
+
 
 main :: IO ()
 main = defaultMain transitionSystemTests
