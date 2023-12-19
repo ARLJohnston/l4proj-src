@@ -13,6 +13,8 @@ import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix, nrows, ncol
 import Data.Vector (Vector, toList)
 import Data.List (nub, findIndices, elem)
 import Data.Bool
+
+import Control.Parallel.Strategies
 #+END_SRC
 
 * Prerequisites to Model Checking
@@ -34,9 +36,8 @@ A Transition System is the definition of which states are able to be reached fro
 For our use case it suffices to simply use an adjacency matrix defined as such:
 #+BEGIN_SRC haskell
 --matrix :: Matrix Bool
---matrix = fromLists [[False, True, True],
---                    [False, False, True],
---                    [False, False, False]]
+matrix = fromLists [[False, True, True], [False, False, True], [False, False, False]]
+ts = fromLists [[False, True], [False, False]]
 #+END_SRC
 
 Additionally we need methods to check the set of states that we can reach from our current state, in an adjacency matrix we have:
@@ -67,27 +68,37 @@ It is sufficient for CTL model checking algorithms to be able to handle six case
 ** CTL logic formulae
 First we need to define a CTL logic formula
 #+BEGIN_SRC haskell
-data CTLLogicFormula =
-    T
-  | AP
-  | And CTLLogicFormula CTLLogicFormula
-  | Not CTLLogicFormula
-  | ExistsNext CTLLogicFormula
-  | ExistsPhiUntilPsi CTLLogicFormula CTLLogicFormula
-  | ExistsAlwaysPhi CTLLogicFormula
+data CTLFormula =
+    Satisfaction [Bool]
+  | Atomic [Bool]
+  | And CTLFormula CTLFormula
+  | Not CTLFormula
+  | ExistsNext CTLFormula
+  | ExistsPhiUntilPsi CTLFormula CTLFormula
+  | ExistsAlwaysPhi CTLFormula
     deriving (Eq, Show)
+
 #+END_SRC
 
 Additionally we need some way of evaluating these formulae to a boolean
 #+BEGIN_SRC haskell
-evaluateCTLFormula :: CTLLogicFormula -> Matrix m -> [Bool] -> Bool
-evaluateCTLFormula T _ _ = True
-evaluateCTLFormula AP _ _ = undefined
-evaluateCTLFormula (And phi psi) m prior = evaluateCTLFormula phi m prior && evaluateCTLFormula psi m prior
-evaluateCTLFormula (Not phi) m prior = not (evaluateCTLFormula phi m prior)
-evaluateCTLFormula (ExistsNext phi) m prior = undefined --foldr (||) False (stepByFunc (evaluateCTLFormula phi) prior m (post)) 
-evaluateCTLFormula (ExistsPhiUntilPsi phi psi) m prior = undefined -- defined later
-evaluateCTLFormula (ExistsAlwaysPhi phi) m prior = undefined
+evaluateCTL :: CTLFormula -> Matrix Bool -> [Bool]
+evaluateCTL (Satisfaction satisfy) _ = satisfy
+evaluateCTL (Atomic satisfy) _ = satisfy
+evaluateCTL (And phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m)
+evaluateCTL (Not phi) m = map (not) (evaluateCTL phi m)
+evaluateCTL (ExistsNext phi) m = existsNextPhi m (evaluateCTL phi m)
+evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
+evaluateCTL (ExistsAlwaysPhi phi) m = existsAlwaysPhi m (evaluateCTL phi m)
+
+predicateAnd :: [Bool] -> [Bool] -> [Bool]
+predicateAnd satPhi satPsi = [(satPhi !! x) && (satPsi !! x) | x <- [0..length satPhi - 1]]
+
+predicateNot :: [Bool] -> [Bool]
+predicateNot satisfy = map not satisfy
+
+existsNextPhi :: Matrix Bool -> [Bool] -> [Bool]
+existsNextPhi matrix satisfy = stepByFunc satisfy [True | _ <- [0.. length satisfy -1]] matrix pre
 #+END_SRC
 
 ** There exists some path where $\Phi$ is satisfied until $\Psi$
@@ -111,7 +122,7 @@ extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
 extendBy prior step m = posterior
   where
     vertices = findIndices id prior
-    vertices' = map (step m) vertices
+    vertices' = map (step m) vertices `using` parBuffer 1 rseq
     posterior = nub $ [ vv | uu <- map (findIndices id) vertices', vv <- uu]
 #+END_SRC
 
@@ -155,3 +166,4 @@ existsAlwaysPhi matrix satisfy =
     nextStep =  stepByFunc satisfy satisfy matrix pre
     satisfy' = [ (satisfy !! x) && (nextStep !! x) | x <- [0..length satisfy - 1]]
 #+END_SRC
+
