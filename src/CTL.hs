@@ -34,16 +34,13 @@ evaluateCTL :: CTLFormula -> Matrix Bool -> [Bool]
 evaluateCTL (Satisfaction satisfy) _ = satisfy
 evaluateCTL (Atomic satisfy) _ = satisfy
 evaluateCTL (And phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m)
-evaluateCTL (Not phi) m = map (not) (evaluateCTL phi m)
+evaluateCTL (Not phi) m = map not (evaluateCTL phi m)
 evaluateCTL (ExistsNext phi) m = existsNextPhi m (evaluateCTL phi m)
 evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
 evaluateCTL (ExistsAlwaysPhi phi) m = existsAlwaysPhi m (evaluateCTL phi m)
 
 predicateAnd :: [Bool] -> [Bool] -> [Bool]
 predicateAnd satPhi satPsi = [(satPhi !! x) && (satPsi !! x) | x <- [0..length satPhi - 1]]
-
-predicateNot :: [Bool] -> [Bool]
-predicateNot satisfy = map not satisfy
 
 existsNextPhi :: Matrix Bool -> [Bool] -> [Bool]
 existsNextPhi matrix satisfy = stepByFunc satisfy [True | _ <- [0.. length satisfy -1]] matrix pre
@@ -76,8 +73,8 @@ existsPhiUntilPsi matrix satPhi satisfy =
     then satisfy
     else existsPhiUntilPsi matrix satPhi satisfy'
   where
-    nextStep =  stepByFunc satisfy satPhi matrix pre
-    satisfy' = [ (satisfy !! x) || (nextStep !! x) | x <- [0..length satisfy - 1]]
+    nextStep = stepByFunc satisfy satPhi matrix pre
+    satisfy' = zipWith (||) satisfy nextStep
 
 existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool]
 existsAlwaysPhi matrix [] = []
@@ -86,5 +83,5 @@ existsAlwaysPhi matrix satisfy =
     then satisfy
     else existsAlwaysPhi matrix satisfy'
   where
-    nextStep =  stepByFunc satisfy satisfy matrix pre
-    satisfy' = [ (satisfy !! x) && (nextStep !! x) | x <- [0..length satisfy - 1]]
+    nextStep = stepByFunc satisfy satisfy matrix pre
+    satisfy' = zipWith (&&) satisfy nextStep

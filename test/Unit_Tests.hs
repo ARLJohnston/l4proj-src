@@ -34,18 +34,8 @@ satB = toList $ Data.Vector.replicate 8 False // [(0, True), (1, True), (2, True
 satC :: [Bool]
 satC = toList $ replicate 8 False // [(0, True), (2, True), (5, True), (6, True)]
 
-testTrue :: TestTree
-testTrue = testCase "B" $  predicateIsTrue satB @?= (toList $ base // [(0, True), (1, True), (2, True), (4, True)])
-  where
-    base = replicate 8 False
-
 testAnd  :: TestTree
 testAnd = testCase "A and C" $ predicateAnd satA satC @?= (toList $ base // [(0, True), (5, True)])
-  where
-    base = replicate 8 False
-
-testNot :: TestTree
-testNot = testCase "Not A" $ predicateNot satA @?= (toList $ base // [(2, True), (4, True), (6, True), (7, True)])
   where
     base = replicate 8 False
 
@@ -69,10 +59,8 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
   [
       testCase "Pre on 6.11" $ transitionSystem `pre` 0 @?= (toList $ base // [(2, True), (3, True), (4, True)])
     , testCase "Post on 6.11" $ transitionSystem `post` 7 @?= (toList $ base // [(3, True), (6, True)])
-    -- 6 Cases for CTL model Checking
-    , testTrue
+    -- 6 Cases for CTL model Checking (Ignoring Base and Not)
     , testAnd
-    , testNot
     , testExistsNext
     , testExistsAlwaysPhi
     , testExistsPhiUntilPsi
