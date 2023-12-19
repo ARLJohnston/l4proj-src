@@ -30,6 +30,7 @@ executable modelChecker
     , diagrams-svg
     , matrix >= 0.3.6.1
     , vector
+    , parallel
 
   hs-source-dirs:   src
   default-language: Haskell2010
@@ -42,6 +43,7 @@ test-suite property-tests
     , QuickCheck >= 2.14.2
     , matrix >= 0.3.6.1
     , vector
+    , parallel
 
   hs-source-dirs:   src, test
   default-language: Haskell2010
@@ -55,6 +57,7 @@ test-suite unit-tests
     , tasty
     , tasty-hunit
     , vector
+    , parallel
 
   hs-source-dirs:   src, test
   default-language: Haskell2010
