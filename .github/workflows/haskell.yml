@@ -20,16 +20,15 @@ jobs:
           # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
+          stack-no-global: true
       - name: Stack Cache 
         uses: actions/cache@v3
         with:
-          path: .stack-work
-          key:          ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}
-          restore-keys: ${{ runner.os }}-stack-work
-
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
       - name: Install dependencies
         run: |
           stack update
         
       - name: Run tests
-        run: stack test
+        run: stack test --no-terminal --stack-yaml stack.yaml
