@@ -3,7 +3,9 @@
 
 #Now add back what we want
 !LICENSE
-!modelChecker.cabal
+!stack.yaml
+!stack.yaml.lock
+!modelChecking.cabal
 !*.nix
 !flake.*
 !*.org
