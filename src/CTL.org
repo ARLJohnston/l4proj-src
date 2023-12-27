@@ -76,6 +76,10 @@ data CTLFormula =
   | ExistsNext CTLFormula
   | ExistsPhiUntilPsi CTLFormula CTLFormula
   | ExistsAlwaysPhi CTLFormula
+  | ForAllNextPhi CTLFormula
+  | ForAllPhiUntilPsi CTLFormula CTLFormula
+  | ForAllEventuallyPhi CTLFormula
+  | ForAllAlwaysPhi CTLFormula
     deriving (Eq, Show)
 
 #+END_SRC
@@ -90,6 +94,28 @@ evaluateCTL (Not phi) m = map not (evaluateCTL phi m)
 evaluateCTL (ExistsNext phi) m = existsNextPhi m (evaluateCTL phi m)
 evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
 evaluateCTL (ExistsAlwaysPhi phi) m = existsAlwaysPhi m (evaluateCTL phi m)
+
+evaluateCTL (ForAllNextPhi phi) m = map not (existsNextPhi m notPhi)
+  where
+    notPhi = map not (evaluateCTL phi m)
+
+evaluateCTL (ForAllPhiUntilPsi phi psi) m = zipWith (&&) doesNotExistCombo doesNotExistNotPsi
+  where 
+    notPhi = map not (evaluateCTL phi m)
+    notPsi = map not (evaluateCTL psi m)
+    notPhiAndNotPsi = zipWith (&&) notPhi notPsi
+    doesNotExistNotPsi = map not (existsAlwaysPhi m notPsi)
+    doesNotExistCombo = map not (existsPhiUntilPsi m notPsi notPhiAndNotPsi)
+    
+
+evaluateCTL (ForAllEventuallyPhi phi) m = map not (existsAlwaysPhi m notPhi)
+  where
+    notPhi = map not (evaluateCTL phi m)
+
+evaluateCTL (ForAllAlwaysPhi phi) m = map not (existsPhiUntilPsi m true notPhi)
+  where
+    notPhi = map not (evaluateCTL phi m)
+    true = replicate (nrows m) True 
 
 predicateAnd :: [Bool] -> [Bool] -> [Bool]
 predicateAnd satPhi satPsi = [(satPhi !! x) && (satPsi !! x) | x <- [0..length satPhi - 1]]
