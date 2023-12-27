@@ -1,4 +1,4 @@
-module CTL (CTLFormula, evaluateCTL) where
+module CTL (module CTL) where
 
 import Data.Matrix (Matrix, getCol, getRow, nrows)
 import Data.Vector (toList)

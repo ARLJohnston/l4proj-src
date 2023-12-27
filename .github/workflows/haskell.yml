@@ -17,7 +17,8 @@ jobs:
     - uses: actions/setup-haskell@v1
       with:
         ghc-version: '8.10.3'
-        cabal-version: '3.2'
+				enable-stack: true
+				stack-version: 'latest'
 
     - name: Cache
       uses: actions/cache@v3
@@ -33,7 +34,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cabal update
+        stack update
         
     - name: Run tests
-      run: cabal test
+      run: stack test
