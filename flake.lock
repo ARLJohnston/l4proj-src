@@ -1,67 +1,16 @@
 {
   "nodes": {
-    "flake-parts": {
-      "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib"
-      },
-      "locked": {
-        "lastModified": 1701473968,
-        "narHash": "sha256-YcVE5emp1qQ8ieHUnxt1wCZCC3ZfAS+SRRWZ2TMda7E=",
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "rev": "34fed993f1674c8d06d58b37ce1e0fe5eebcb9f5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "type": "github"
-      }
-    },
-    "haskell-flake": {
-      "locked": {
-        "lastModified": 1701214938,
-        "narHash": "sha256-25PiqJK6iSX0CPZghcUCGCEvU9uMSNbCJ772NComipY=",
-        "owner": "srid",
-        "repo": "haskell-flake",
-        "rev": "abea026d35df050c27163f5193f96ef3a8b4ea6a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "srid",
-        "repo": "haskell-flake",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1702206697,
-        "narHash": "sha256-vE9oEx3Y8TO5MnWwFlmopjHd1JoEBno+EhsfUCq5iR8=",
+        "lastModified": 1703438236,
+        "narHash": "sha256-aqVBq1u09yFhL7bj1/xyUeJjzr92fXVvQSSEx6AdB1M=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "29d6c96900b9b576c2fb89491452f283aa979819",
+        "rev": "5f64a12a728902226210bf01d25ec6cbb9d9265b",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs-lib": {
-      "locked": {
-        "dir": "lib",
-        "lastModified": 1701253981,
-        "narHash": "sha256-ztaDIyZ7HrTAfEEUt9AtTDNoCYxUdSd6NrRHaYOIxtk=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "e92039b55bcd58469325ded85d4f58dd5a4eaf58",
-        "type": "github"
-      },
-      "original": {
-        "dir": "lib",
-        "owner": "NixOS",
         "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
@@ -69,8 +18,6 @@
     },
     "root": {
       "inputs": {
-        "flake-parts": "flake-parts",
-        "haskell-flake": "haskell-flake",
         "nixpkgs": "nixpkgs"
       }
     }

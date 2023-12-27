@@ -1,9 +1,8 @@
-module CTL(module CTL) where
+module CTL (CTLFormula, evaluateCTL) where
 
-import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix, nrows, ncols)
-import Data.Vector (Vector, toList)
-import Data.List (nub, findIndices, elem)
-import Data.Bool
+import Data.Matrix (Matrix, getCol, getRow, nrows)
+import Data.Vector (toList)
+import Data.List (nub, findIndices)
 
 import Control.Parallel.Strategies
 
@@ -11,8 +10,8 @@ import Control.Parallel.Strategies
 --satPhi = [True, False, True]
 
 --matrix :: Matrix Bool
-matrix = fromLists [[False, True, True], [False, False, True], [False, False, False]]
-ts = fromLists [[False, True], [False, False]]
+--matrix = fromLists [[False, True, True], [False, False, True], [False, False, False]]
+--ts = fromLists [[False, True], [False, False]]
 
 pre :: Matrix a -> Int -> [a]
 pre m n = toList $ getCol (n+1) m
@@ -92,8 +91,8 @@ stepByFunc prior labelling m step = posterior
     posterior = [x `elem` reachable | x <- [0..length prior - 1]]
 
 existsPhiUntilPsi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
-existsPhiUntilPsi matrix [] satisfy = satisfy
-existsPhiUntilPsi matrix satPhi [] = []
+existsPhiUntilPsi _ [] satisfy = satisfy
+existsPhiUntilPsi _ _ [] = []
 existsPhiUntilPsi matrix satPhi satisfy =
   if satisfy' == satisfy
     then satisfy
@@ -103,7 +102,7 @@ existsPhiUntilPsi matrix satPhi satisfy =
     satisfy' = zipWith (||) satisfy nextStep
 
 existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool]
-existsAlwaysPhi matrix [] = []
+existsAlwaysPhi _ [] = []
 existsAlwaysPhi matrix satisfy =
   if satisfy' == satisfy
     then satisfy
