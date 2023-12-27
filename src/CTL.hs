@@ -1,17 +1,17 @@
-module CTL(module CTL) where
+module CTL (module CTL) where
 
-import Data.Matrix (Matrix, fromLists, getCol, getRow, prettyMatrix, nrows, ncols)
-import Data.Vector (Vector, toList)
-import Data.List (nub, findIndices, elem)
-import Data.Bool
+import Data.Matrix (Matrix, getCol, getRow, nrows)
+import Data.Vector (toList)
+import Data.List (nub, findIndices)
+
+import Control.Parallel.Strategies
 
 --satPhi :: [Bool]
 --satPhi = [True, False, True]
 
 --matrix :: Matrix Bool
---matrix = fromLists [[False, True, True],
---                    [False, False, True],
---                    [False, False, False]]
+--matrix = fromLists [[False, True, True], [False, False, True], [False, False, False]]
+--ts = fromLists [[False, True], [False, False]]
 
 pre :: Matrix a -> Int -> [a]
 pre m n = toList $ getCol (n+1) m
@@ -19,24 +19,56 @@ pre m n = toList $ getCol (n+1) m
 post :: Matrix a -> Int -> [a] 
 post m n = toList $ getRow (n+1) m
 
-data CTLLogicFormula =
-    T
-  | AP
-  | And CTLLogicFormula CTLLogicFormula
-  | Not CTLLogicFormula
-  | ExistsNext CTLLogicFormula
-  | ExistsPhiUntilPsi CTLLogicFormula CTLLogicFormula
-  | ExistsAlwaysPhi CTLLogicFormula
+data CTLFormula =
+    Satisfaction [Bool]
+  | Atomic [Bool]
+  | And CTLFormula CTLFormula
+  | Not CTLFormula
+  | ExistsNext CTLFormula
+  | ExistsPhiUntilPsi CTLFormula CTLFormula
+  | ExistsAlwaysPhi CTLFormula
+  | ForAllNextPhi CTLFormula
+  | ForAllPhiUntilPsi CTLFormula CTLFormula
+  | ForAllEventuallyPhi CTLFormula
+  | ForAllAlwaysPhi CTLFormula
     deriving (Eq, Show)
 
-evaluateCTLFormula :: CTLLogicFormula -> Matrix m -> [Bool] -> Bool
-evaluateCTLFormula T _ _ = True
-evaluateCTLFormula AP _ _ = undefined
-evaluateCTLFormula (And phi psi) m prior = evaluateCTLFormula phi m prior && evaluateCTLFormula psi m prior
-evaluateCTLFormula (Not phi) m prior = not (evaluateCTLFormula phi m prior)
-evaluateCTLFormula (ExistsNext phi) m prior = undefined --foldr (||) False (stepByFunc (evaluateCTLFormula phi) prior m (post)) 
-evaluateCTLFormula (ExistsPhiUntilPsi phi psi) m prior = undefined -- defined later
-evaluateCTLFormula (ExistsAlwaysPhi phi) m prior = undefined
+evaluateCTL :: CTLFormula -> Matrix Bool -> [Bool]
+evaluateCTL (Satisfaction satisfy) _ = satisfy
+evaluateCTL (Atomic satisfy) _ = satisfy
+evaluateCTL (And phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m)
+evaluateCTL (Not phi) m = map not (evaluateCTL phi m)
+evaluateCTL (ExistsNext phi) m = existsNextPhi m (evaluateCTL phi m)
+evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
+evaluateCTL (ExistsAlwaysPhi phi) m = existsAlwaysPhi m (evaluateCTL phi m)
+
+evaluateCTL (ForAllNextPhi phi) m = map not (existsNextPhi m notPhi)
+  where
+    notPhi = map not (evaluateCTL phi m)
+
+evaluateCTL (ForAllPhiUntilPsi phi psi) m = zipWith (&&) doesNotExistCombo doesNotExistNotPsi
+  where 
+    notPhi = map not (evaluateCTL phi m)
+    notPsi = map not (evaluateCTL psi m)
+    notPhiAndNotPsi = zipWith (&&) notPhi notPsi
+    doesNotExistNotPsi = map not (existsAlwaysPhi m notPsi)
+    doesNotExistCombo = map not (existsPhiUntilPsi m notPsi notPhiAndNotPsi)
+    
+
+evaluateCTL (ForAllEventuallyPhi phi) m = map not (existsAlwaysPhi m notPhi)
+  where
+    notPhi = map not (evaluateCTL phi m)
+
+evaluateCTL (ForAllAlwaysPhi phi) m = map not (existsPhiUntilPsi m true notPhi)
+  where
+    notPhi = map not (evaluateCTL phi m)
+    true = replicate (nrows m) True 
+
+predicateAnd :: [Bool] -> [Bool] -> [Bool]
+predicateAnd satPhi satPsi = [(satPhi !! x) && (satPsi !! x) | x <- [0..length satPhi - 1]]
+
+existsNextPhi :: Matrix Bool -> [Bool] -> [Bool]
+existsNextPhi matrix satisfy = stepByFunc satisfy [True | _ <- [0.. length satisfy -1]] matrix pre
 
 --satPsi :: [Bool]
 --satPsi = [False, False, True]
@@ -45,7 +77,7 @@ extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
 extendBy prior step m = posterior
   where
     vertices = findIndices id prior
-    vertices' = map (step m) vertices
+    vertices' = map (step m) vertices `using` parBuffer 1 rseq
     posterior = nub $ [ vv | uu <- map (findIndices id) vertices', vv <- uu]
 
 stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
@@ -59,22 +91,22 @@ stepByFunc prior labelling m step = posterior
     posterior = [x `elem` reachable | x <- [0..length prior - 1]]
 
 existsPhiUntilPsi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
-existsPhiUntilPsi matrix [] satisfy = satisfy
-existsPhiUntilPsi matrix satPhi [] = []
+existsPhiUntilPsi _ [] satisfy = satisfy
+existsPhiUntilPsi _ _ [] = []
 existsPhiUntilPsi matrix satPhi satisfy =
   if satisfy' == satisfy
     then satisfy
     else existsPhiUntilPsi matrix satPhi satisfy'
   where
-    nextStep =  stepByFunc satisfy satPhi matrix pre
-    satisfy' = [ (satisfy !! x) || (nextStep !! x) | x <- [0..length satisfy - 1]]
+    nextStep = stepByFunc satisfy satPhi matrix pre
+    satisfy' = zipWith (||) satisfy nextStep
 
 existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool]
-existsAlwaysPhi matrix [] = []
+existsAlwaysPhi _ [] = []
 existsAlwaysPhi matrix satisfy =
   if satisfy' == satisfy
     then satisfy
     else existsAlwaysPhi matrix satisfy'
   where
-    nextStep =  stepByFunc satisfy satisfy matrix pre
-    satisfy' = [ (satisfy !! x) && (nextStep !! x) | x <- [0..length satisfy - 1]]
+    nextStep = stepByFunc satisfy satisfy matrix pre
+    satisfy' = zipWith (&&) satisfy nextStep

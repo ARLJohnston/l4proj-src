@@ -16,21 +16,8 @@ library
       base >= 4.14.1.0
     , matrix >= 0.3.6.1
     , vector
+    , parallel
   hs-source-dirs: src
-  default-language: Haskell2010
-
-executable modelChecker
-  import:           warnings
-  main-is:          CTL.hs
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:    
-      base >= 4.14.1.0
-    , diagrams-lib
-    , diagrams-svg
-    , matrix >= 0.3.6.1
-    , vector
-
-  hs-source-dirs:   src
   default-language: Haskell2010
 
 test-suite property-tests 
@@ -41,6 +28,7 @@ test-suite property-tests
     , QuickCheck >= 2.14.2
     , matrix >= 0.3.6.1
     , vector
+    , parallel
 
   hs-source-dirs:   src, test
   default-language: Haskell2010
@@ -54,6 +42,7 @@ test-suite unit-tests
     , tasty
     , tasty-hunit
     , vector
+    , parallel
 
   hs-source-dirs:   src, test
   default-language: Haskell2010
