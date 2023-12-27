@@ -13,28 +13,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-haskell@v1
-      with:
-        ghc-version: '8.10.3'
-				enable-stack: true
-				stack-version: 'latest'
+      - uses: actions/checkout@v3
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '8.8.4' # Exact version of ghc to use
+          # cabal-version: 'latest'. Omitted, but defaults to 'latest'
+          enable-stack: true
+          stack-version: 'latest'
+	  
+      - name: Stack Cache 
+        uses: actions/cache@v3
+        with:
+          path: .stack-work
+          key:          ${{ runner.os }}-stack-work-${{ hashFiles('stack.yaml') }}
+          restore-keys: ${{ runner.os }}-stack-work
 
-    - name: Cache
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-cabal
-      with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
-
-    - name: Install dependencies
-      run: |
-        stack update
+      - name: Install dependencies
+        run: |
+          stack update
         
-    - name: Run tests
-      run: stack test
+      - name: Run tests
+        run: stack test
