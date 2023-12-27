@@ -26,9 +26,13 @@ jobs:
         with:
           path: ~/.stack
           key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+      
       - name: Install dependencies
         run: |
           stack update
+
+      - name: List files
+        run: ls
         
       - name: Run tests
         run: stack test --no-terminal --stack-yaml stack.yaml
