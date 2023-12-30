@@ -9,9 +9,14 @@
 !*.nix
 !flake.*
 !*.org
+
 !src
 !src/*.org
 !src/*.hs
+
 !test
 !test/*.org
 !test/*.hs
+!test/images
+!test/images/*.tex
+!test/images/*.svg

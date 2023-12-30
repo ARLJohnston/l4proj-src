@@ -116,9 +116,6 @@ evaluateCTL (ForAllAlwaysPhi phi) m = map not (existsPhiUntilPsi m true notPhi)
     notPhi = map not (evaluateCTL phi m)
     true = replicate (nrows m) True 
 
-predicateAnd :: [Bool] -> [Bool] -> [Bool]
-predicateAnd satPhi satPsi = [(satPhi !! x) && (satPsi !! x) | x <- [0..length satPhi - 1]]
-
 existsNextPhi :: Matrix Bool -> [Bool] -> [Bool]
 existsNextPhi matrix satisfy = stepByFunc satisfy [True | _ <- [0.. length satisfy -1]] matrix pre
 #+END_SRC

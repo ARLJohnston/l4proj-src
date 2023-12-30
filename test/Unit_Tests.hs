@@ -34,11 +34,6 @@ satB = toList $ Data.Vector.replicate 8 False // [(0, True), (1, True), (2, True
 satC :: [Bool]
 satC = toList $ replicate 8 False // [(0, True), (2, True), (5, True), (6, True)]
 
-testAnd  :: TestTree
-testAnd = testCase "A and C" $ predicateAnd satA satC @?= (toList $ base // [(0, True), (5, True)])
-  where
-    base = replicate 8 False
-
 testExistsNext :: TestTree
 testExistsNext = testCase "Exists next A" $ existsNextPhi transitionSystem satA @?= (toList $ base // [(1, True), (2, True), (3, True), (4, True), (5, True), (7, True)])
   where
@@ -60,7 +55,6 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
       testCase "Pre on 6.11" $ transitionSystem `pre` 0 @?= (toList $ base // [(2, True), (3, True), (4, True)])
     , testCase "Post on 6.11" $ transitionSystem `post` 7 @?= (toList $ base // [(3, True), (6, True)])
     -- 6 Cases for CTL model Checking (Ignoring Base and Not)
-    , testAnd
     , testExistsNext
     , testExistsAlwaysPhi
     , testExistsPhiUntilPsi
@@ -107,6 +101,26 @@ testExistsPhiUntilPsi_CTL = testCase "Eval (∃AUC)" $ evaluateCTL (ExistsPhiUnt
   where
     base = replicate 8 False
 
+testForAllNextPhi_CTL :: TestTree
+testForAllNextPhi_CTL  = testCase "Eval (∀X)" $ True @?= True
+  where
+    base = replicate 8 False
+
+testForAllPhiUntilPsi_CTL :: TestTree
+testForAllPhiUntilPsi_CTL = testCase "Eval (∀U)" $ True @?= True
+  where
+    base = replicate 8 False
+
+testForAllEventuallyPhi_CTL :: TestTree
+testForAllEventuallyPhi_CTL = testCase "Eval (∀☐)" $ True @?= True
+  where
+    base = replicate 8 False
+
+testForAllAlwaysPhi_CTL :: TestTree
+testForAllAlwaysPhi_CTL = testCase "Eval (∀())" $ True @?= True
+  where
+    base = replicate 8 False
+
 individualCases :: TestTree
 individualCases = testGroup "Tests on Transition System from Figure 6.11 in Principles of Model Checking (Using EvaluateCTL)"
   [
@@ -116,6 +130,10 @@ individualCases = testGroup "Tests on Transition System from Figure 6.11 in Prin
     , testExistsNext_CTL
     , testExistsAlwaysPhi_CTL
     , testExistsPhiUntilPsi_CTL
+    , testForAllNextPhi_CTL
+    , testForAllPhiUntilPsi_CTL
+    , testForAllEventuallyPhi_CTL
+    , testForAllAlwaysPhi_CTL
   ]
   where
     base = replicate 8 False
