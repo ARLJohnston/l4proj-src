@@ -9,7 +9,6 @@
 #+BEGIN_SRC haskell
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverlappingInstances #-}
 module Main where
 
 import Test.QuickCheck
@@ -38,6 +37,29 @@ instance {-# OVERLAPPING #-} Arbitrary [Bool] where
   arbitrary = do
     n <- getSize
     vectorOf n arbitrary
+
+instance Arbitrary CTLFormula where
+  arbitrary = sized ctlFormula'
+    where
+      ctlFormula' 0 = liftM Satisfaction arbitrary
+      ctlFormula' n | n > 0 =
+        oneof
+          [
+              liftM  Satisfaction arbitrary
+            , liftM  Atomic arbitrary
+            , liftM2 And phi psi
+            , liftM  Not phi
+            , liftM  ExistsNext phi
+            , liftM2 ExistsPhiUntilPsi phi psi
+            , liftM  ExistsAlways phi
+            , liftM  ForAllNext phi
+            , liftM2 ForAllPhiUntilPsi phi psi
+            , liftM  ForAllEventually phi 
+            , liftM  ForAllAlways phi
+          ]
+        where
+        phi = ctlFormula' (n `div` 2)
+        psi = ctlFormula' (n `div` 2)
 #+END_SRC
 
 * CTL Model Checker Tests
@@ -79,6 +101,11 @@ prop_ExtendByInRangePost prior m = length (filter (\x -> x >= 0 && x <= nrows m)
     posterior = extendBy prior post m
 #+END_SRC
 
+** CTL Evaluation tests
+#+BEGIN_SRC haskell
+prop_EvalReturnsSameLength :: CTLFormula -> Matrix Bool -> Bool
+prop_EvalReturnsSameLength formula m = length (evaluateCTL formula m) == nrows m
+#+END_SRC
 * Main method for running tests
 #+BEGIN_SRC haskell
 -- Template Haskell requires this line for use of quickCheckAll

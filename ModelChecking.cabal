@@ -1,8 +1,9 @@
 cabal-version:   3.0
-name:            modelChecking
+name:            ModelChecking
 version:         0.1.0.0
 license:         GPL-3.0-or-later
 author:          Alistair Johnston
+category:        Libraries
 maintainer:      2560836j@student.gla.ac.uk
 build-type:      Simple
 
@@ -12,23 +13,30 @@ common warnings
 library
   exposed-modules:
     CTL
+    CTLParser
   build-depends:    
       base >= 4.14.1.0
     , matrix >= 0.3.6.1
     , vector
     , parallel
+    , parsec
+    , QuickCheck >= 2.14.2
+
   hs-source-dirs: src
   default-language: Haskell2010
 
 test-suite property-tests 
   type: exitcode-stdio-1.0
   main-is: Properties.hs
+  other-modules:
+    CTL
   build-depends:    
       base >= 4.14.1.0
     , QuickCheck >= 2.14.2
     , matrix >= 0.3.6.1
     , vector
     , parallel
+    , parsec
 
   hs-source-dirs:   src, test
   default-language: Haskell2010
@@ -36,6 +44,9 @@ test-suite property-tests
 test-suite unit-tests 
   type: exitcode-stdio-1.0
   main-is: Unit_Tests.hs
+  other-modules:
+    CTL
+    CTLParser
   build-depends:    
       base >= 4.14.1.0
     , matrix >= 0.3.6.1
@@ -43,6 +54,12 @@ test-suite unit-tests
     , tasty-hunit
     , vector
     , parallel
+    , parsec
 
   hs-source-dirs:   src, test
   default-language: Haskell2010
+
+source-repository head
+  type: git
+  location: https://github.com/ARLJohnston/l4proj-src
+                    
