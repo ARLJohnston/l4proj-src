@@ -16,7 +16,7 @@ getKeys ((s, _):xs) = s : getKeys xs
 ctlParser :: CTLParser CTLFormula
 ctlParser = do
   phi <- start
-  maybePsi <- end
+  maybePsi <- end '^'
   case maybePsi of
     Nothing -> return phi
     Just psi -> return (And phi psi)
@@ -26,7 +26,7 @@ satisfactionParser :: CTLParser CTLFormula
 satisfactionParser = do
   lookupTable <- getState
   spaces
-  value <- choice $ map try $ map string $ getKeys lookupTable
+  value <- choice $ map (try . string) $ getKeys lookupTable
   case lookup value lookupTable of
     Just sat -> return sat
     Nothing -> fail "Unable to match any given SAT values"
@@ -44,22 +44,21 @@ start =
   <|> forAllAlwaysParser
   <|> untilParser
 
-end :: CTLParser (Maybe CTLFormula)
-end =
+end :: Char -> CTLParser (Maybe CTLFormula)
+end op =
       getEnd
   <|> return Nothing
   where
     getEnd = do
       spaces
-      char '^'
+      char op
       spaces
-      psi <- ctlParser
-      return (Just psi)
+      Just <$> ctlParser
 
 untilParser :: CTLParser CTLFormula
 untilParser = do
   expr1 <- startUntil
-  maybeExpr2 <- endUntil
+  maybeExpr2 <- end 'U'
   case maybeExpr2 of
     Nothing -> error "No psi specified for until"
     Just psi -> case expr1 of
@@ -70,18 +69,6 @@ startUntil :: CTLParser CTLFormula
 startUntil =
       forAllParser
   <|> existsParser
-
-endUntil :: CTLParser (Maybe CTLFormula)
-endUntil =
-      getEndUntil
-  <|> return Nothing
-  where
-    getEndUntil = do
-      spaces
-      char 'U'
-      spaces
-      psi <- ctlParser
-      return (Just psi)
 
 -- Prefix Parsers
 groupParser :: CTLParser CTLFormula
@@ -110,40 +97,34 @@ notParser :: CTLParser CTLFormula
 notParser = do
   spaces
   try (string "¬") <|> try (string "not")
-  phi <- ctlParser
-  return (Not phi)
+  Not <$> ctlParser
 
 existsNextParser :: CTLParser CTLFormula
 existsNextParser = do
   spaces
   try (string "∃X") <|> try (string "existsNext")
-  phi <- ctlParser
-  return (ExistsNext phi)
+  ExistsNext <$> ctlParser
 
 existsAlwaysParser :: CTLParser CTLFormula
 existsAlwaysParser = do
   spaces
   try (string "∃☐") <|> try (string "existsAlways")
-  phi <- ctlParser
-  return (ExistsAlways phi)
+  ExistsAlways <$> ctlParser
 
 forAllNextParser :: CTLParser CTLFormula
 forAllNextParser = do
   spaces
   try (string "∀X") <|> try (string "forAllNext")
-  phi <- ctlParser
-  return (ForAllNext phi)
+  ForAllNext <$> ctlParser
 
 forAllEventuallyParser :: CTLParser CTLFormula
 forAllEventuallyParser = do
   spaces
   try (string "∀◇") <|> try (string "forAllEventually")
-  phi <- ctlParser
-  return (ForAllEventually phi)
+  ForAllEventually <$> ctlParser
 
 forAllAlwaysParser :: CTLParser CTLFormula
 forAllAlwaysParser = do
   spaces
   try (string "∀☐") <|> try (string "forAllAlways")
-  phi <- ctlParser
-  return (ForAllAlways phi)
+  ForAllAlways <$> ctlParser

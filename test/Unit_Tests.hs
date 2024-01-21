@@ -265,7 +265,7 @@ testParseForAllPhiUntilPsiWithForAllEventually = testCase "Parse (\"∀satBU(∀
     parseResult = fromRight (Satisfaction []) maybeParseResult
 
 testParseForAllAlwaysWithNot :: TestTree
-testParseForAllAlwaysWithNot = testCase "Parse (\"∀☐(¬SatD)\")" $ parseResult @?= ForAllAlways (Not (Satisfaction [True, True]))
+testParseForAllAlwaysWithNot = testCase "Parse (\"∀☐(¬satD)\")" $ parseResult @?= ForAllAlways (Not (Satisfaction [True, True]))
   where
     maybeParseResult = runCTLParser "∀☐(¬satD)" lookupTable
     parseResult = fromRight (Satisfaction []) maybeParseResult
