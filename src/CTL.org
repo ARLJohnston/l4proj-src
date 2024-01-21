@@ -93,7 +93,6 @@ instance Show CTLFormula where
   show (ForAllPhiUntilPsi phi psi) = "∀((" ++ show phi ++ ") U (" ++ show psi ++ "))"
   show (ForAllEventuallyPhi phi) = "∀◇(" ++ show phi ++ ")"
   show (ForAllAlwaysPhi phi) = "∀☐(" ++ show phi ++ ")"
-
 #+END_SRC
 
 Additionally we need some way of evaluating these formulae to a boolean

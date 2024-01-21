@@ -66,7 +66,7 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
 
 satA_CTL :: CTLFormula
 satA_CTL = Satisfaction satA
-                
+
 satB_CTL :: CTLFormula
 satB_CTL = Satisfaction satB
                 
@@ -139,8 +139,6 @@ individualCases = testGroup "Tests on Transition System from Figure 6.11 in Prin
   ]
   where
     base = replicate 8 False
-
-
 
 lookupTable :: [([Char], CTLFormula)]
 lookupTable =
@@ -287,6 +285,6 @@ testSets = testGroup "All sets of tests"
     , individualParserTests
     , compositeParserTests 
   ]
-
+  
 main :: IO ()
 main = defaultMain testSets

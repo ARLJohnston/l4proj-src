@@ -58,6 +58,7 @@ satC = toList $ replicate 8 False // [(0, True), (2, True), (5, True), (6, True)
 ** Individual operations
 Tests on the operations that are utilised by evaluateCTL
 #+BEGIN_SRC haskell
+
 testExistsNext :: TestTree
 testExistsNext = testCase "Exists next A" $ existsNextPhi transitionSystem satA @?= (toList $ base // [(1, True), (2, True), (3, True), (4, True), (5, True), (7, True)])
   where
@@ -88,7 +89,7 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
     
 #+END_SRC
 
-** CTL formula Tests 
+** CTL formula Tests
 Test the evaluateCTL function properly, with CTLFormula data
 *** Individual evaluations 
 Test the simplest cases of each evaluation that can be represented with CTLFormula
@@ -98,7 +99,7 @@ satA_CTL = Satisfaction satA
                 
 satB_CTL :: CTLFormula
 satB_CTL = Satisfaction satB
-                
+
 satC_CTL :: CTLFormula
 satC_CTL = Satisfaction satC
 
@@ -173,7 +174,6 @@ individualCases = testGroup "Tests on Transition System from Figure 6.11 in Prin
 *** Composite evaluations
 #+BEGIN_SRC haskell
 #+END_SRC
-
 
 * Parser tests
 ** Setup
