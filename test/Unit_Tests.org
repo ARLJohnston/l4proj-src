@@ -95,10 +95,10 @@ Test the simplest cases of each evaluation that can be represented with CTLFormu
 #+BEGIN_SRC haskell
 satA_CTL :: CTLFormula
 satA_CTL = Satisfaction satA
-		
+                
 satB_CTL :: CTLFormula
 satB_CTL = Satisfaction satB
-		
+                
 satC_CTL :: CTLFormula
 satC_CTL = Satisfaction satC
 
@@ -299,7 +299,6 @@ testParseExistsAlwaysWithForAllNext = testCase "Parse (\"∃☐(∀XsatA)\")" $ 
   where
     maybeParseResult = runCTLParser "∃☐(∀XsatA)" lookupTable
     parseResult = fromRight (Satisfaction []) maybeParseResult
-
 
 testParseForAllPhiUntilPsiWithForAllEventually :: TestTree
 testParseForAllPhiUntilPsiWithForAllEventually = testCase "Parse (\"∀satBU(∀◇satC)\")" $ parseResult @?= ForAllPhiUntilPsi (Satisfaction [False, True]) (ForAllEventually (Satisfaction [True, False]))

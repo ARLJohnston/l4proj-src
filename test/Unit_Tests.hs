@@ -66,10 +66,10 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
 
 satA_CTL :: CTLFormula
 satA_CTL = Satisfaction satA
-		
+                
 satB_CTL :: CTLFormula
 satB_CTL = Satisfaction satB
-		
+                
 satC_CTL :: CTLFormula
 satC_CTL = Satisfaction satC
 
@@ -256,7 +256,6 @@ testParseExistsAlwaysWithForAllNext = testCase "Parse (\"∃☐(∀XsatA)\")" $ 
   where
     maybeParseResult = runCTLParser "∃☐(∀XsatA)" lookupTable
     parseResult = fromRight (Satisfaction []) maybeParseResult
-
 
 testParseForAllPhiUntilPsiWithForAllEventually :: TestTree
 testParseForAllPhiUntilPsiWithForAllEventually = testCase "Parse (\"∀satBU(∀◇satC)\")" $ parseResult @?= ForAllPhiUntilPsi (Satisfaction [False, True]) (ForAllEventually (Satisfaction [True, False]))

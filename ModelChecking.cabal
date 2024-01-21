@@ -28,6 +28,8 @@ library
 test-suite property-tests 
   type: exitcode-stdio-1.0
   main-is: Properties.hs
+  other-modules:
+    CTL
   build-depends:    
       base >= 4.14.1.0
     , QuickCheck >= 2.14.2
@@ -42,6 +44,9 @@ test-suite property-tests
 test-suite unit-tests 
   type: exitcode-stdio-1.0
   main-is: Unit_Tests.hs
+  other-modules:
+    CTL
+    CTLParser
   build-depends:    
       base >= 4.14.1.0
     , matrix >= 0.3.6.1
@@ -53,22 +58,6 @@ test-suite unit-tests
 
   hs-source-dirs:   src, test
   default-language: Haskell2010
-
-
--- test-suite performance-tests 
---   type: exitcode-stdio-1.0
---   main-is: Performance_Tests.hs
---   build-depends:    
---       base >= 4.14.1.0
---     , matrix >= 0.3.6.1
---     , tasty
---     , tasty-bench
---     , vector
---     , parallel
---     , parsec
--- 
---   hs-source-dirs:   src, test
---   default-language: Haskell2010
 
 source-repository head
   type: git
