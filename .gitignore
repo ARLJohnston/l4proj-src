@@ -5,7 +5,7 @@
 !LICENSE
 !stack.yaml
 !stack.yaml.lock
-!modelChecking.cabal
+!ModelChecking.cabal
 !*.nix
 !flake.*
 !*.org
