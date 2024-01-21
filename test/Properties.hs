@@ -1,6 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverlappingInstances #-}
 module Main where
 
 import Test.QuickCheck
@@ -40,11 +39,11 @@ instance Arbitrary CTLFormula where
             , liftM  Not phi
             , liftM  ExistsNext phi
             , liftM2 ExistsPhiUntilPsi phi psi
-            , liftM  ExistsAlwaysPhi phi
-            , liftM  ForAllNextPhi phi
+            , liftM  ExistsAlways phi
+            , liftM  ForAllNext phi
             , liftM2 ForAllPhiUntilPsi phi psi
-            , liftM  ForAllEventuallyPhi phi 
-            , liftM  ForAllAlwaysPhi phi
+            , liftM  ForAllEventually phi 
+            , liftM  ForAllAlways phi
           ]
         where
         phi = ctlFormula' (n `div` 2)
