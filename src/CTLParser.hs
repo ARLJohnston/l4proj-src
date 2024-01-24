@@ -3,9 +3,9 @@ module CTLParser (runCTLParser) where
 import Text.Parsec
 import CTL
 
-type CTLParser a = Parsec String [([Char], CTLFormula)] a
+type CTLParser a = Parsec String [([Char], [Bool])] a
 
-runCTLParser :: String -> [([Char], CTLFormula)] -> Either ParseError CTLFormula
+runCTLParser :: String -> [([Char], [Bool])] -> Either ParseError CTLFormula
 runCTLParser input lookupTable = runParser ctlParser lookupTable "CTL Parser" input
 
 getKeys :: [([Char], a)] -> [[Char]]
@@ -28,7 +28,7 @@ satisfactionParser = do
   spaces
   value <- choice $ map (try . string) $ getKeys lookupTable
   case lookup value lookupTable of
-    Just sat -> return sat
+    Just sat -> return $ Satisfaction sat
     Nothing -> fail "Unable to match any given SAT values"
 
 -- Start parsers
@@ -39,6 +39,7 @@ start =
   <|> notParser
   <|> existsNextParser
   <|> existsAlwaysParser
+  <|> existsEventuallyParser
   <|> forAllNextParser
   <|> forAllEventuallyParser
   <|> forAllAlwaysParser
@@ -110,6 +111,12 @@ existsAlwaysParser = do
   spaces
   try (string "∃☐") <|> try (string "existsAlways")
   ExistsAlways <$> ctlParser
+
+existsEventuallyParser :: CTLParser CTLFormula
+existsEventuallyParser = do
+  spaces
+  try (string "∃◇") <|> try (string "existsEventually")
+  ExistsEventually <$> ctlParser
 
 forAllNextParser :: CTLParser CTLFormula
 forAllNextParser = do

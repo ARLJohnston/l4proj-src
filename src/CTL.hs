@@ -23,10 +23,12 @@ data CTLFormula =
     Satisfaction [Bool]
   | Atomic [Bool]
   | And CTLFormula CTLFormula
+  | Or CTLFormula CTLFormula
   | Not CTLFormula
   | ExistsNext CTLFormula
   | ExistsPhiUntilPsi CTLFormula CTLFormula
   | ExistsAlways CTLFormula
+  | ExistsEventually CTLFormula
   | ForAllNext CTLFormula
   | ForAllPhiUntilPsi CTLFormula CTLFormula
   | ForAllEventually CTLFormula
@@ -35,8 +37,9 @@ data CTLFormula =
 
 instance Show CTLFormula where
   show (Satisfaction satisfy) = "Sat(" ++ show satisfy ++ ")"
-  show (Atomic satisfy) = "Atom(" ++ show satisfy ++ ")"
+  show (Atomic satisfy) = "Sat(" ++ show satisfy ++ ")"
   show (And phi psi) = "(" ++ show phi ++ ") ^ (" ++ show psi ++ ")"
+  show (Or phi psi) = "(" ++ show phi ++ ") v (" ++ show psi ++ ")"
   show (Not phi) = "¬(" ++ show phi ++ ")"
   show (ExistsNext phi) = "∃X(" ++ show phi ++ ")" 
   show (ExistsPhiUntilPsi phi psi) = "∃((" ++ show phi ++ ") U (" ++ show psi ++ "))"
@@ -45,13 +48,19 @@ instance Show CTLFormula where
   show (ForAllPhiUntilPsi phi psi) = "∀((" ++ show phi ++ ") U (" ++ show psi ++ "))"
   show (ForAllEventually phi) = "∀◇(" ++ show phi ++ ")"
   show (ForAllAlways phi) = "∀☐(" ++ show phi ++ ")"
+  show (ExistsEventually phi) = "∃◇(" ++ show phi ++ ")"
 
 evaluateCTL :: CTLFormula -> Matrix Bool -> [Bool]
 evaluateCTL (Satisfaction satisfy) _ = satisfy
 evaluateCTL (Atomic satisfy) _ = satisfy
+
 evaluateCTL (And phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
+evaluateCTL (Or phi psi) m = zipWith (||) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
+
 evaluateCTL (Not phi) m = map not (evaluateCTL phi m) `using` parList rseq
+
 evaluateCTL (ExistsNext phi) m = existsNextPhi m (evaluateCTL phi m) `using` parList rseq
+
 evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
 evaluateCTL (ExistsAlways phi) m = existsAlwaysPhi m (evaluateCTL phi m)
 
@@ -75,6 +84,12 @@ evaluateCTL (ForAllAlways phi) m = map not (existsPhiUntilPsi m true notPhi) `us
   where
     notPhi = map not (evaluateCTL phi m) `using` parList rseq
     true = replicate (nrows m) True 
+
+evaluateCTL (ExistsEventually phi) m = map not alwaysNotPhi `using` parList rseq
+  where
+    notPhi = map not (evaluateCTL phi m) `using` parList rseq
+    forAllAlwaysNotPhi = ForAllAlways (Satisfaction notPhi)
+    alwaysNotPhi = evaluateCTL forAllAlwaysNotPhi m
 
 existsNextPhi :: Matrix Bool -> [Bool] -> [Bool]
 existsNextPhi matrix satisfy = stepByFunc satisfy [True | _ <- [0.. length satisfy -1]] matrix pre
