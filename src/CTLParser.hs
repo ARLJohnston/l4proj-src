@@ -5,6 +5,15 @@ import CTL
 
 type CTLParser a = Parsec String [([Char], [Bool])] a
 
+-- | Generates a 'CTLFormula' given a formula and satisfaction sets.
+--
+-- > lookupTable :: [([Char], [Bool])]
+-- > lookupTable =
+-- >   [
+-- >       ("satA", [False, False])
+-- >   ]
+-- >
+-- > parseResult = runCTLParser "¬satA" lookupTable = Right ¬(Sat([False, False]))
 runCTLParser :: String -> [([Char], [Bool])] -> Either ParseError CTLFormula
 runCTLParser input lookupTable = runParser ctlParser lookupTable "CTL Parser" input
 

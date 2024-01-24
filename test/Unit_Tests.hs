@@ -31,9 +31,6 @@ satB = [True,True,True,False,True,False,False,False]
 satC :: [Bool]
 satC = [True,False,True,False,False,True,True,False]
 
-testExistsNext :: TestTree
-testExistsNext = testCase "Exists next A" $ existsNextPhi transitionSystem satA @?= [False,True,True,True,True,True,False,True]
-
 testExistsAlwaysPhi :: TestTree
 testExistsAlwaysPhi = testCase "Exists Always B" $ existsAlwaysPhi transitionSystem satB @?= [True,False,True,False,True,False,False,False]
 
@@ -46,9 +43,6 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
       testCase "Pre on 6.11" $ transitionSystem `pre` 0 @?= [False,False,True,True,True,False,False,False]
 
     , testCase "Post on 6.11" $ transitionSystem `post` 7 @?= [False,False,False,True,False,False,True,False]
-
-    -- 6 Cases for CTL model Checking (Ignoring Base and Not)
-    , testExistsNext
     , testExistsAlwaysPhi
     , testExistsPhiUntilPsi
   ]

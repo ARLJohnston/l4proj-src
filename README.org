@@ -1,13 +1,83 @@
-#+TITLE: Model Checking from first principles
+#+TITLE: The 'BLANK' Model Checker
 #+Author: Alistair Johnston
 #+PROPERTY: header-args
 #+STARTUP: showeverything latexpreview
 #+OPTIONS: tex:t
 
 * Readme
+| File          | Dir  | Purpose                             |
+|---------------+------+-------------------------------------|
+| [[./src/CTL.hs][CTL.hs]]        | src  | Defines CTLFormula and checker      |
+| [[./src/CTLParser.hs][CTLParser.hs]]  | src  | Produces CTLFormula from plain text |
+| [[./test/Properties.hs][Properties.hs]] | test | Property based tests                |
+| [[./test/Unit_Tests.hs][Unit_Tests.hs]] | test | Unit tests                          |
+As model checking is a complex subject, org files have been included where appropriate to add further commentary.
+
+* Build Instructions
+Using Stack to build and use the library is highly recommended, however it is possible to build the library with other toolchains.
+
+To run the library interactively within GHCI simply use:
+#+BEGIN_SRC shell
+stack ghci
+#+END_SRC
+Which will create a GHCI instance with CTL and CTLParser exports loaded, the user can then use the functions provided by the library to check models.
+
+** Requirements
+The library requires a working stack distribution.
+
+** Build Steps
+#+BEGIN_SRC shell
+stack build
+#+END_SRC
+
+** Test Steps
+#+BEGIN_SRC shell
+stack test
+#+END_SRC
 
 
-** Build Instructions
-Use of Cabal is recommended for builds, requirements are listed in [[./modelChecker.cabal]]
+* QuickStart
+** Transition System
+Transition Systems are represented by an adjacency [[https://hackage.haskell.org/package/matrix-0.3.6.1/docs/Data-Matrix.html][matrix]].
+#+BEGIN_SRC haskell
+transitionSystem :: Matrix Bool
+transitionSystem = fromLists
+  [
+      [True, False, True]
+    , [False, True, False]
+    , [True, False, True]
+  ]
+#+END_SRC
 
-Use cabal run to run the program
+** CTLFormula
+*** Parser
+Parsing a formula can be done as such:
+#+BEGIN_SRC haskell
+lookupTable :: [([Char], [Bool])]
+lookupTable =
+  [
+      ("satA", [True, False, False])
+    , ("satB", [False, True, False])
+    , ("satC", [False, False, True])
+  ]
+
+eitherFormula = runCTLParser "satA^(¬satB)^satC" lookupTable
+-- > eitherFormula = Right (Sat([True,False,False])) ^ ((¬(Sat([False,True,False]))) ^ (Sat([False,False,True])))
+formula = fromRight (Satisfaction []) eitherFormula
+-- > formula = (Sat([True,False,False])) ^ ((¬(Sat([False,True,False]))) ^ (Sat([False,False,True])))
+#+END_SRC
+*** Without Parser
+Creating a formula without using the parser is not recommended as it becomes exponentially more complex than the string representation the more nested formulae there are.
+#+BEGIN_SRC haskell
+satA = Satisfaction [True, False, False]
+satB = Satisfaction [False, True, False]
+satC = Satisfaction [False, False, True]
+
+formula = And satA (And (Not satB) satC)
+#+END_SRC
+
+** Evaluating CTL Formulae
+#+BEGIN_SRC haskell
+result = evaluateCTL formula transitionSystem
+-- > result = [False, False, False]
+#+END_SRC
