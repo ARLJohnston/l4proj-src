@@ -101,7 +101,7 @@ evaluateCTL (ExistsNext phi) m = lastPhi
 evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
 evaluateCTL (ExistsAlways phi) m = existsAlwaysPhi m (evaluateCTL phi m)
 
-evaluateCTL (ForAllNext phi) m = map not (lastNotPhi) `using` parList rseq
+evaluateCTL (ForAllNext phi) m = map not lastNotPhi `using` parList rseq
   where
     notPhi = map not (evaluateCTL phi m) `using` parList rseq
     lastNotPhi = getReachableByFunc notPhi m pre `using` parList rseq
