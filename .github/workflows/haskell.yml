@@ -32,3 +32,13 @@ jobs:
 
       - name: Run tests
         run: stack test --no-terminal --stack-yaml stack.yaml
+
+      - name: Create documentation
+        run: |
+          mkdir docs
+          stack haddock --haddock-arguments=--odir=docs
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v3
+        with:
+          path: docs/
