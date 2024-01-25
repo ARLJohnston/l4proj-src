@@ -70,7 +70,7 @@ untilParser = do
   expr1 <- startUntil
   maybeExpr2 <- end 'U'
   case maybeExpr2 of
-    Nothing -> error "No psi specified for until"
+    Nothing -> error "No psi specified for until clause"
     Just psi -> case expr1 of
       ForAllPhiUntilPsi phi _ -> return (ForAllPhiUntilPsi phi psi)
       ExistsPhiUntilPsi phi _ -> return (ExistsPhiUntilPsi phi psi)
@@ -92,7 +92,7 @@ groupParser = do
 forAllParser :: CTLParser CTLFormula
 forAllParser = do
   spaces
-  try (string "∀") <|> try (string "always")
+  try (string "∀") <|> try (string "forAll")
   phi <- ctlParser
   return (ForAllPhiUntilPsi phi phi)
 
