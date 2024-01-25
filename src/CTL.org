@@ -11,7 +11,7 @@ module CTL (module CTL) where
 
 import Data.Matrix (Matrix, getCol, getRow, nrows)
 import Data.Vector (toList)
-import Data.List (nub, findIndices)
+import Data.List (findIndices)
 
 import Control.Parallel.Strategies
 #+END_SRC
@@ -24,32 +24,62 @@ A labelling function is what gives us which states satisfy $\Phi$, i.e. this is 
 In terms of code it is sufficient to have a list of Boolean values which each map to a state.
 
 For example say we have states $s_0, s_1, s_2$ and $\Phi$ is defined as True if the state is even else Odd, then we can represent $Sat(\Phi)$ as:
-#+BEGIN_SRC haskell
---satPhi :: [Bool]
---satPhi = [True, False, True]
+#+BEGIN_SRC
+satPhi :: [Bool]
+satPhi = [True, False, True]
 #+END_SRC
 
 ** Transition Systems
 A Transition System is the definition of which states are able to be reached from other states; this is effectively a graph representation of the state-space.
 
 For our use case it suffices to simply use an adjacency matrix defined as such:
-#+BEGIN_SRC haskell
---matrix :: Matrix Bool
---matrix = fromLists [[False, True, True], [False, False, True], [False, False, False]]
---ts = fromLists [[False, True], [False, False]]
+#+BEGIN_SRC
+matrix :: Matrix Bool
+matrix = fromLists [[False, True, True], [False, False, True], [False, False, False]]
+ts = fromLists [[False, True], [False, False]]
 #+END_SRC
 
 Additionally we need methods to check the set of states that we can reach from our current state, in an adjacency matrix we have:
 Predecessor(state) = column at state index
 Successor(state) = row at state index
+We also define functions which, given a set of states allow us to use these functions.
 
 Which we can represent as such:
 #+BEGIN_SRC haskell
+-- | Get the states of the transition system which can transition to the given state.
 pre :: Matrix a -> Int -> [a]
 pre m n = toList $ getCol (n+1) m
 
+-- | Get the states of the transition system which the given state can transition to.
 post :: Matrix a -> Int -> [a] 
 post m n = toList $ getRow (n+1) m
+
+-- | Given a prior set of vertices, satisfaction set, transition system and transitory function, return the vertices which can be reached from the vertices where the satisfaction is True.
+stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
+stepByFunc [] _ _ _ = []
+stepByFunc prior labelling m step = posterior
+  where
+--States we can reach
+    vertices = extendBy prior step m
+--Filter to states where the predicate is true
+    reachable = filter (labelling !!) vertices
+    posterior = map (`elem` reachable) [0..length prior - 1]
+
+-- | Given a prior set of vertices, transition system and transitory function, return the vertices reachable from the vertices via the transitory function.
+getReachableByFunc :: [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
+getReachableByFunc [] _ _ = []
+getReachableByFunc prior m step = posterior
+  where
+    reachable = extendBy prior step m
+    posterior = map (`elem` reachable) [0..length prior - 1]
+
+-- | Given a satisfaction set, transitory function and transition system, return the indices which can be reached from True states in the satisfaction set via the transitory function.
+extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
+extendBy prior step m = posterior
+  where
+    vertices = findIndices id prior
+    vertices' = map (step m) vertices `using` parList rseq
+    posterior = [ vv | uu <- map (findIndices id) vertices', vv <- uu]
 #+END_SRC
 
 * CTL Model Checking
@@ -67,107 +97,120 @@ It is sufficient for CTL model checking algorithms to be able to handle six case
 ** CTL logic formulae
 First we need to define a CTL logic formula
 #+BEGIN_SRC haskell
+-- | Recursive Data Structure representing a CTLFormula.
 data CTLFormula =
     Satisfaction [Bool]
   | Atomic [Bool]
   | And CTLFormula CTLFormula
+  | Or CTLFormula CTLFormula
   | Not CTLFormula
   | ExistsNext CTLFormula
   | ExistsPhiUntilPsi CTLFormula CTLFormula
-  | ExistsAlwaysPhi CTLFormula
-  | ForAllNextPhi CTLFormula
+  | ExistsAlways CTLFormula
+  | ExistsEventually CTLFormula
+  | ForAllNext CTLFormula
   | ForAllPhiUntilPsi CTLFormula CTLFormula
-  | ForAllEventuallyPhi CTLFormula
-  | ForAllAlwaysPhi CTLFormula
+  | ForAllEventually CTLFormula
+  | ForAllAlways CTLFormula
     deriving (Eq)
 
 instance Show CTLFormula where
   show (Satisfaction satisfy) = "Sat(" ++ show satisfy ++ ")"
   show (Atomic satisfy) = "Sat(" ++ show satisfy ++ ")"
   show (And phi psi) = "(" ++ show phi ++ ") ^ (" ++ show psi ++ ")"
+  show (Or phi psi) = "(" ++ show phi ++ ") v (" ++ show psi ++ ")"
   show (Not phi) = "¬(" ++ show phi ++ ")"
   show (ExistsNext phi) = "∃X(" ++ show phi ++ ")" 
   show (ExistsPhiUntilPsi phi psi) = "∃((" ++ show phi ++ ") U (" ++ show psi ++ "))"
-  show (ExistsAlwaysPhi phi) = "∃☐(" ++ show phi ++ ")"
-  show (ForAllNextPhi phi) = "∀X(" ++ show phi ++ ")"
+  show (ExistsAlways phi) = "∃☐(" ++ show phi ++ ")"
+  show (ForAllNext phi) = "∀X(" ++ show phi ++ ")"
   show (ForAllPhiUntilPsi phi psi) = "∀((" ++ show phi ++ ") U (" ++ show psi ++ "))"
-  show (ForAllEventuallyPhi phi) = "∀◇(" ++ show phi ++ ")"
-  show (ForAllAlwaysPhi phi) = "∀☐(" ++ show phi ++ ")"
+  show (ForAllEventually phi) = "∀◇(" ++ show phi ++ ")"
+  show (ForAllAlways phi) = "∀☐(" ++ show phi ++ ")"
+  show (ExistsEventually phi) = "∃◇(" ++ show phi ++ ")"
 #+END_SRC
 
 Additionally we need some way of evaluating these formulae to a boolean
 #+BEGIN_SRC haskell
+-- |  Evaluate a 'CTLFormula' on a given transition system.
+--
+-- > transitionSystem :: Matrix Bool
+-- > transitionSystem = fromLists [[True, False],[True, True]]
+-- >
+-- > formula :: CTLFormula
+-- > formula = And (Satisfaction [True, True]) (Satisfaction [False, True])
+-- >
+-- > evaluateCTL formula transitionSystem = [False, True]
 evaluateCTL :: CTLFormula -> Matrix Bool -> [Bool]
 evaluateCTL (Satisfaction satisfy) _ = satisfy
-evaluateCTL (Atomic satisfy) _ = satisfy
-evaluateCTL (And phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
-evaluateCTL (Not phi) m = map not (evaluateCTL phi m) `using` parList rseq
-evaluateCTL (ExistsNext phi) m = existsNextPhi m (evaluateCTL phi m) `using` parList rseq
-evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
-evaluateCTL (ExistsAlwaysPhi phi) m = existsAlwaysPhi m (evaluateCTL phi m)
 
-evaluateCTL (ForAllNextPhi phi) m = map not (existsNextPhi m notPhi) `using` parList rseq
+evaluateCTL (Atomic satisfy) _ = satisfy
+
+evaluateCTL (And phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
+
+evaluateCTL (Or phi psi) m = zipWith (||) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
+
+evaluateCTL (Not phi) m = map not (evaluateCTL phi m) `using` parList rseq
+
+evaluateCTL (ExistsNext phi) m = lastPhi
+  where
+    satisfy = evaluateCTL phi m
+    lastPhi = getReachableByFunc satisfy m pre `using` parList rseq
+
+evaluateCTL (ExistsPhiUntilPsi phi psi) m = existsPhiUntilPsi m (evaluateCTL phi m) (evaluateCTL psi m)
+evaluateCTL (ExistsAlways phi) m = existsAlwaysPhi m (evaluateCTL phi m)
+
+evaluateCTL (ForAllNext phi) m = map not lastNotPhi `using` parList rseq
   where
     notPhi = map not (evaluateCTL phi m) `using` parList rseq
+    lastNotPhi = getReachableByFunc notPhi m pre `using` parList rseq
 
-evaluateCTL (ForAllPhiUntilPsi phi psi) m = zipWith (&&) doesNotExistCombo doesNotExistNotPsi `using` parList rseq
+evaluateCTL (ForAllPhiUntilPsi phi psi) m = zipWith (&&) notPhiUntilNotPhiAndPsi doesNotExistNotPsi `using` parList rseq
   where 
     notPhi = map not (evaluateCTL phi m) `using` parList rseq
     notPsi = map not (evaluateCTL psi m) `using` parList rseq
     notPhiAndNotPsi = zipWith (&&) notPhi notPsi `using` parList rseq
     doesNotExistNotPsi = map not (existsAlwaysPhi m notPsi) `using` parList rseq
-    doesNotExistCombo = map not (existsPhiUntilPsi m notPsi notPhiAndNotPsi) `using` parList rseq
+    notPhiUntilNotPhiAndPsi = map not (existsPhiUntilPsi m notPsi notPhiAndNotPsi) `using` parList rseq
 
-evaluateCTL (ForAllEventuallyPhi phi) m = map not (existsAlwaysPhi m notPhi) `using` parList rseq
+evaluateCTL (ForAllEventually phi) m = map not (existsAlwaysPhi m notPhi) `using` parList rseq
   where
     notPhi = map not (evaluateCTL phi m) `using` parList rseq
 
-evaluateCTL (ForAllAlwaysPhi phi) m = map not (existsPhiUntilPsi m true notPhi) `using` parList rseq
+evaluateCTL (ForAllAlways phi) m = map not (existsPhiUntilPsi m true notPhi) `using` parList rseq
   where
     notPhi = map not (evaluateCTL phi m) `using` parList rseq
     true = replicate (nrows m) True 
 
-existsNextPhi :: Matrix Bool -> [Bool] -> [Bool]
-existsNextPhi matrix satisfy = stepByFunc satisfy [True | _ <- [0.. length satisfy -1]] matrix pre
+evaluateCTL (ExistsEventually phi) m = map not alwaysNotPhi `using` parList rseq
+  where
+    notPhi = map not (evaluateCTL phi m) `using` parList rseq
+    forAllAlwaysNotPhi = ForAllAlways (Satisfaction notPhi)
+    alwaysNotPhi = evaluateCTL forAllAlwaysNotPhi m
+
 #+END_SRC
 
 ** There exists some path where $\Phi$ is satisfied until $\Psi$
 The simplest case to check (past the trivial cases) is the case where we are interested in $Sat(\exists(\Phi U \Psi))$.
 In this case we are given:
  - The labelling functions: $Sat(\Phi)$ and $Sat(\Psi)$
- -	A transition system TS
- -	A set of states S
+ - A transition system TS
+ - A set of states S
 
 The approach outlined in Principles of Model checking p351 involved making a choice of elements in the visited set of states and then extending it,
 however a simpler approach is to extend the set of states that we can reach by 1 timestep at each iteration, that is we apply pre to our set of reachable sets
 at each repetition.
-
-#+BEGIN_SRC haskell
---satPsi :: [Bool]
---satPsi = [False, False, True]
+#+BEGIN_SRC 
+satPsi :: [Bool]
+satPsi = [False, False, True]
 #+END_SRC
 
 #+BEGIN_SRC haskell
-extendBy :: [Bool] -> (Matrix Bool -> Int -> [Bool]) -> Matrix Bool -> [Int]
-extendBy prior step m = posterior
-  where
-    vertices = findIndices id prior
-    vertices' = map (step m) vertices `using` parList rseq
-    posterior = nub $ [ vv | uu <- map (findIndices id) vertices', vv <- uu]
 #+END_SRC
 
 In our previous transition system we can see that there are two paths that satisfy $\exists(\Phi U \Psi)$: namely the paths $s_0 \rightarrow s_2$ and $s_2$ 
 #+BEGIN_SRC haskell
-stepByFunc :: [Bool] -> [Bool] -> Matrix Bool -> (Matrix Bool -> Int -> [Bool]) -> [Bool]
-stepByFunc [] _ _ _ = []
-stepByFunc prior labelling m step = posterior
-  where
---States we can reach
-    vertices  = extendBy prior step m
---Filter to states where the predicate is true
-    reachable = filter (labelling !!) vertices
-    posterior = [x `elem` reachable | x <- [0..length prior - 1]]
-
+-- | Return the states where ∃ΦUΨ holds.
 existsPhiUntilPsi :: Matrix Bool -> [Bool] -> [Bool] -> [Bool]
 existsPhiUntilPsi _ [] satisfy = satisfy
 existsPhiUntilPsi _ _ [] = []
@@ -186,6 +229,7 @@ At each iteration we get Just the result of the backward step (as opposed to $\e
 If we get a repeat then True if empty then False
 
 #+BEGIN_SRC haskell
+-- | Return the states where ∃☐Φ holds.
 existsAlwaysPhi :: Matrix Bool -> [Bool] -> [Bool]
 existsAlwaysPhi _ [] = []
 existsAlwaysPhi matrix satisfy =
@@ -196,4 +240,3 @@ existsAlwaysPhi matrix satisfy =
     nextStep = stepByFunc satisfy satisfy matrix pre
     satisfy' = zipWith (&&) satisfy nextStep `using` parList rseq
 #+END_SRC
-
