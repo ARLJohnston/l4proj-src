@@ -1,11 +1,14 @@
 cabal-version:   3.0
-name:            ModelChecking
+name:            hModC
 version:         0.1.0.0
 license:         GPL-3.0-or-later
 author:          Alistair Johnston
 category:        Libraries
 maintainer:      2560836j@student.gla.ac.uk
 build-type:      Simple
+synopsis: A basic model checker operating on explicit model representations.
+description:
+  A model checking library that operates on an adjacency matrix representation of a transition system.
 
 common warnings
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints 
@@ -16,10 +19,10 @@ library
     CTLParser
   build-depends:    
       base >= 4.14.1.0
-    , matrix >= 0.3.6.1
-    , vector
     , parallel
     , parsec
+  ghc-options:
+    -threaded
 
   hs-source-dirs: src
   default-language: Haskell2010
@@ -32,8 +35,6 @@ test-suite property-tests
   build-depends:    
       base >= 4.14.1.0
     , QuickCheck >= 2.14.2
-    , matrix >= 0.3.6.1
-    , vector
     , parallel
     , parsec
 
@@ -48,10 +49,8 @@ test-suite unit-tests
     CTLParser
   build-depends:    
       base >= 4.14.1.0
-    , matrix >= 0.3.6.1
     , tasty
     , tasty-hunit
-    , vector
     , parallel
     , parsec
 

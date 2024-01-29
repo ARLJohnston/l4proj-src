@@ -25,7 +25,7 @@ getKeys ((s, _):xs) = s : getKeys xs
 ctlParser :: CTLParser CTLFormula
 ctlParser = do
   phi <- start
-  maybePsi <- end '^'
+  maybePsi <- end ["^"]
   case maybePsi of
     Nothing -> return phi
     Just psi -> return (And phi psi)
@@ -37,7 +37,7 @@ satisfactionParser = do
   spaces
   value <- choice $ map (try . string) $ getKeys lookupTable
   case lookup value lookupTable of
-    Just sat -> return $ Satisfaction sat
+    Just sat -> return $ Satisfy sat
     Nothing -> fail "Unable to match any given SAT values"
 
 -- Start parsers
@@ -54,21 +54,21 @@ start =
   <|> forAllAlwaysParser
   <|> untilParser
 
-end :: Char -> CTLParser (Maybe CTLFormula)
+end :: [[Char]] -> CTLParser (Maybe CTLFormula)
 end op =
       getEnd
   <|> return Nothing
   where
     getEnd = do
       spaces
-      char op
+      choice $ map (try . string) $ op--string op
       spaces
       Just <$> ctlParser
 
 untilParser :: CTLParser CTLFormula
 untilParser = do
   expr1 <- startUntil
-  maybeExpr2 <- end 'U'
+  maybeExpr2 <- end ["U", "until"]
   case maybeExpr2 of
     Nothing -> error "No psi specified for until clause"
     Just psi -> case expr1 of
