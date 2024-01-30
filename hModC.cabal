@@ -60,4 +60,3 @@ test-suite unit-tests
 source-repository head
   type: git
   location: https://github.com/ARLJohnston/l4proj-src
-                    

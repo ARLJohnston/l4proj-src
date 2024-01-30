@@ -292,7 +292,6 @@ testExistsAlways_E2E = testCase "E2E (∃☐B)" $ result @?= [True,False,True,Fa
 
 testExistsPhiUntilPsi_E2E :: TestTree
 testExistsPhiUntilPsi_E2E = testCase "E2E (∃AUC)" $ result @?= [True,True,True,True,False,True,True,False]
-
   where
     parseFormula = fromRight (Satisfy []) $ runCTLParser "∃AUC" mapping
     result = evaluateCTL parseFormula transitionSystem
