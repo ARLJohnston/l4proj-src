@@ -1,6 +1,6 @@
 cabal-version:   3.0
 name:            hModC
-version:         0.1.0.0
+version:         1.0.0
 license:         GPL-3.0-or-later
 author:          Alistair Johnston
 category:        Libraries
