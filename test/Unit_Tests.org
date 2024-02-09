@@ -76,22 +76,22 @@ Test the evaluateCTL function properly, with CTLFormula data
 Test the simplest cases of each evaluation that can be represented with CTLFormula
 #+BEGIN_SRC haskell
 satA_CTL :: CTLFormula
-satA_CTL = Satisfy satA
+satA_CTL = CTLLabel satA
                 
 satB_CTL :: CTLFormula
-satB_CTL = Satisfy satB
+satB_CTL = CTLLabel satB
 
 satC_CTL :: CTLFormula
-satC_CTL = Satisfy satC
+satC_CTL = CTLLabel satC
 
 testSatisfy_CTL :: TestTree
 testSatisfy_CTL = testCase "Eval (B)" $ evaluateCTL satB_CTL transitionSystem @?= [True,True,True,False,True,False,False,False]
 
 testAnd_CTL  :: TestTree
-testAnd_CTL = testCase "Eval (A^C)" $ evaluateCTL (And satA_CTL satC_CTL) transitionSystem @?= [True,False,False,False,False,True,False,False]
+testAnd_CTL = testCase "Eval (A^C)" $ evaluateCTL (CTLAnd satA_CTL satC_CTL) transitionSystem @?= [True,False,False,False,False,True,False,False]
 
 testNot_CTL :: TestTree
-testNot_CTL = testCase "Eval (¬A)" $ evaluateCTL (Not satA_CTL) transitionSystem @?= [False,False,True,False,True,False,True,True]
+testNot_CTL = testCase "Eval (¬A)" $ evaluateCTL (CTLNot satA_CTL) transitionSystem @?= [False,False,True,False,True,False,True,True]
 
 testExistsNext_CTL :: TestTree
 testExistsNext_CTL = testCase "Eval (∃XA)" $ evaluateCTL (ExistsNext satA_CTL) transitionSystem @?= [False,True,True,True,True,True,False,True]
@@ -144,7 +144,7 @@ lookupTable =
     , ("satB", [False, True])
     , ("satC", [True, False])
     , ("satD", [True, True])
-    , ("U", [True, True])
+    , ("U",    [True, True])
   ]
 #+END_SRC
 
@@ -156,82 +156,82 @@ testParseFail = testCase "Parse (\"\") -> Fail" $ isLeft parseResult @?= True
     parseResult = runCTLParser "" lookupTable
 
 testParseSatisfy :: TestTree
-testParseSatisfy = testCase "Parse (\"satA\")" $ parseResult @?= Satisfy [False, False]
+testParseSatisfy = testCase "Parse (\"satA\")" $ parseResult @?= CTLLabel [False, False]
   where
     maybeParseResult = runCTLParser "satA" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseAnd :: TestTree
-testParseAnd = testCase "Parse (\"satB^satC\")" $ parseResult @?= And (Satisfy [False, True]) (Satisfy [True, False])
+testParseAnd = testCase "Parse (\"satB^satC\")" $ parseResult @?= CTLAnd (CTLLabel [False, True]) (CTLLabel [True, False])
   where
     maybeParseResult = runCTLParser "satB^satC" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseNot :: TestTree
-testParseNot = testCase "Parse (\"¬satD\")" $ parseResult @?= Not (Satisfy [True, True]) 
+testParseNot = testCase "Parse (\"¬satD\")" $ parseResult @?= CTLNot (CTLLabel [True, True]) 
   where
     maybeParseResult = runCTLParser "¬satD" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseExistsNext :: TestTree
-testParseExistsNext = testCase "Parse (\"∃XsatA\")" $ parseResult @?= ExistsNext (Satisfy [False, False])
+testParseExistsNext = testCase "Parse (\"∃XsatA\")" $ parseResult @?= ExistsNext (CTLLabel [False, False])
   where
     maybeParseResult = runCTLParser "∃XsatA" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseExistsPhiUntilPsi :: TestTree
-testParseExistsPhiUntilPsi = testCase "Parse (\"∃satBUsatC\")" $ parseResult @?= ExistsPhiUntilPsi (Satisfy [False, True]) (Satisfy [True, False])
+testParseExistsPhiUntilPsi = testCase "Parse (\"∃satBUsatC\")" $ parseResult @?= ExistsPhiUntilPsi (CTLLabel [False, True]) (CTLLabel [True, False])
   where
     maybeParseResult = runCTLParser "∃satBUsatC" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseExistsAlwaysPhi :: TestTree
-testParseExistsAlwaysPhi  = testCase "Parse (\"∃☐satD\")" $ parseResult @?= ExistsAlways (Satisfy [True, True])
+testParseExistsAlwaysPhi  = testCase "Parse (\"∃☐satD\")" $ parseResult @?= ExistsAlways (CTLLabel [True, True])
   where
     maybeParseResult = runCTLParser "∃☐satD" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseForAllNextPhi :: TestTree
-testParseForAllNextPhi = testCase "Parse (\"∀XsatA\")" $ parseResult @?= ForAllNext (Satisfy [False, False])
+testParseForAllNextPhi = testCase "Parse (\"∀XsatA\")" $ parseResult @?= ForAllNext (CTLLabel [False, False])
   where
     maybeParseResult = runCTLParser "∀XsatA" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseForAllPhiUntilPsi :: TestTree
-testParseForAllPhiUntilPsi  = testCase "Parse (\"∀satBUsatC\")" $ parseResult @?= ForAllPhiUntilPsi (Satisfy [False, True]) (Satisfy [True, False])
+testParseForAllPhiUntilPsi  = testCase "Parse (\"∀satBUsatC\")" $ parseResult @?= ForAllPhiUntilPsi (CTLLabel [False, True]) (CTLLabel [True, False])
   where
     maybeParseResult = runCTLParser "∀satBUsatC" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseForAllEventuallyPhi :: TestTree
-testParseForAllEventuallyPhi  = testCase "Parse (\"∀◇satD\")" $ parseResult @?= ForAllEventually (Satisfy [True, True])
+testParseForAllEventuallyPhi  = testCase "Parse (\"∀◇satD\")" $ parseResult @?= ForAllEventually (CTLLabel [True, True])
   where
     maybeParseResult = runCTLParser "∀◇satD" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseForAllAlwaysPhi :: TestTree
-testParseForAllAlwaysPhi = testCase "Parse (\"∀☐satA\")" $ parseResult @?= ForAllAlways (Satisfy [False, False])
+testParseForAllAlwaysPhi = testCase "Parse (\"∀☐satA\")" $ parseResult @?= ForAllAlways (CTLLabel [False, False])
   where
     maybeParseResult = runCTLParser "∀☐satA" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseGrouping :: TestTree
-testParseGrouping = testCase "Parse (\"(satB)\")" $ parseResult @?= Satisfy [False, True]
+testParseGrouping = testCase "Parse (\"(satB)\")" $ parseResult @?= CTLLabel [False, True]
   where
     maybeParseResult = runCTLParser "(satB)" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseUUU :: TestTree
-testParseUUU = testCase "Parse (\"∃UUU\")" $ parseResult @?= ExistsPhiUntilPsi (Satisfy [True, True]) (Satisfy [True, True])
+testParseUUU = testCase "Parse (\"∃UUU\")" $ parseResult @?= ExistsPhiUntilPsi (CTLLabel [True, True]) (CTLLabel [True, True])
   where
     maybeParseResult = runCTLParser "∃UUU" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseUuntilU :: TestTree
-testParseUuntilU = testCase "Parse (\"∃UuntilU\")" $ parseResult @?= ExistsPhiUntilPsi (Satisfy [True, True]) (Satisfy [True, True])
+testParseUuntilU = testCase "Parse (\"∃UuntilU\")" $ parseResult @?= ExistsPhiUntilPsi (CTLLabel [True, True]) (CTLLabel [True, True])
   where
     maybeParseResult = runCTLParser "∃UuntilU" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 individualParserTests :: TestTree
 individualParserTests = testGroup "Individual Expression tests for the CTLParser"
@@ -255,34 +255,34 @@ individualParserTests = testGroup "Individual Expression tests for the CTLParser
 #+BEGIN_SRC haskell
 
 testParseAndWithNot :: TestTree
-testParseAndWithNot = testCase "Parse (\"satA^(¬satB)\")" $ parseResult @?= And (Satisfy [False, False]) (Not (Satisfy [False, True]))
+testParseAndWithNot = testCase "Parse (\"satA^(¬satB)\")" $ parseResult @?= CTLAnd (CTLLabel [False, False]) (CTLNot (CTLLabel [False, True]))
   where
     maybeParseResult = runCTLParser "satA^(¬satB)" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseExistsNextWithExistsPhiUntilPsi :: TestTree
-testParseExistsNextWithExistsPhiUntilPsi = testCase "Parse (\"∃X(∃satCUsatD)\")" $ parseResult @?= ExistsNext (ExistsPhiUntilPsi (Satisfy [True, False]) (Satisfy [True, True]))
+testParseExistsNextWithExistsPhiUntilPsi = testCase "Parse (\"∃X(∃satCUsatD)\")" $ parseResult @?= ExistsNext (ExistsPhiUntilPsi (CTLLabel [True, False]) (CTLLabel [True, True]))
   where
     maybeParseResult = runCTLParser "∃X(∃satCUsatD)" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseExistsAlwaysWithForAllNext :: TestTree
-testParseExistsAlwaysWithForAllNext = testCase "Parse (\"∃☐(∀XsatA)\")" $ parseResult @?= ExistsAlways (ForAllNext (Satisfy [False, False]))
+testParseExistsAlwaysWithForAllNext = testCase "Parse (\"∃☐(∀XsatA)\")" $ parseResult @?= ExistsAlways (ForAllNext (CTLLabel [False, False]))
   where
     maybeParseResult = runCTLParser "∃☐(∀XsatA)" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseForAllPhiUntilPsiWithForAllEventually :: TestTree
-testParseForAllPhiUntilPsiWithForAllEventually = testCase "Parse (\"∀satBU(∀◇satC)\")" $ parseResult @?= ForAllPhiUntilPsi (Satisfy [False, True]) (ForAllEventually (Satisfy [True, False]))
+testParseForAllPhiUntilPsiWithForAllEventually = testCase "Parse (\"∀satBU(∀◇satC)\")" $ parseResult @?= ForAllPhiUntilPsi (CTLLabel [False, True]) (ForAllEventually (CTLLabel [True, False]))
   where
     maybeParseResult = runCTLParser "∀satBU(∀◇satC)" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 testParseForAllAlwaysWithNot :: TestTree
-testParseForAllAlwaysWithNot = testCase "Parse (\"∀☐(¬satD)\")" $ parseResult @?= ForAllAlways (Not (Satisfy [True, True]))
+testParseForAllAlwaysWithNot = testCase "Parse (\"∀☐(¬satD)\")" $ parseResult @?= ForAllAlways (CTLNot (CTLLabel [True, True]))
   where
     maybeParseResult = runCTLParser "∀☐(¬satD)" lookupTable
-    parseResult = fromRight (Satisfy []) maybeParseResult
+    parseResult = fromRight (CTLLabel []) maybeParseResult
 
 compositeParserTests :: TestTree
 compositeParserTests = testGroup "Composite Expression tests for the CTLParser"
@@ -309,44 +309,44 @@ mapping =
 testSatisfy_E2E :: TestTree
 testSatisfy_E2E = testCase "E2E (B)" $ result @?= [True,True,True,False,True,False,False,False]
   where
-    parseFormula = fromRight (Satisfy []) $ runCTLParser "B" mapping
+    parseFormula = fromRight (CTLLabel []) $ runCTLParser "B" mapping
     result = evaluateCTL parseFormula transitionSystem
 
 testAnd_E2E :: TestTree
 testAnd_E2E = testCase "E2E (A^C)" $ result @?= [True,False,False,False,False,True,False,False]
   where
-    parseFormula = fromRight (Satisfy []) $ runCTLParser "A^C" mapping
+    parseFormula = fromRight (CTLLabel []) $ runCTLParser "A^C" mapping
     result = evaluateCTL parseFormula transitionSystem
 
 testNot_E2E :: TestTree
 testNot_E2E = testCase "E2E (¬A)" $ result @?= [False,False,True,False,True,False,True,True]
   where
-    parseFormula = fromRight (Satisfy []) $ runCTLParser "¬A" mapping
+    parseFormula = fromRight (CTLLabel []) $ runCTLParser "¬A" mapping
     result = evaluateCTL parseFormula transitionSystem
 
 testExistsNext_E2E :: TestTree
 testExistsNext_E2E = testCase "E2E (∃XA)" $ result @?= [False,True,True,True,True,True,False,True]
   where
-    parseFormula = fromRight (Satisfy []) $ runCTLParser "∃XA" mapping
+    parseFormula = fromRight (CTLLabel []) $ runCTLParser "∃XA" mapping
     result = evaluateCTL parseFormula transitionSystem
 
 testExistsAlways_E2E :: TestTree
 testExistsAlways_E2E = testCase "E2E (∃☐B)" $ result @?= [True,False,True,False,True,False,False,False]
   where
-    parseFormula = fromRight (Satisfy []) $ runCTLParser "∃☐B" mapping
+    parseFormula = fromRight (CTLLabel []) $ runCTLParser "∃☐B" mapping
     result = evaluateCTL parseFormula transitionSystem
 
 
 testExistsPhiUntilPsi_E2E :: TestTree
 testExistsPhiUntilPsi_E2E = testCase "E2E (∃AUC)" $ result @?= [True,True,True,True,False,True,True,False]
   where
-    parseFormula = fromRight (Satisfy []) $ runCTLParser "∃AUC" mapping
+    parseFormula = fromRight (CTLLabel []) $ runCTLParser "∃AUC" mapping
     result = evaluateCTL parseFormula transitionSystem
 
 -- test_E2E :: TestTree
 -- test_E2E = testCase "E2E ()" $ result @?=
 --   where
---     parseFormula = fromRight (Satisfy []) $ runCTLParser "" mapping
+--     parseFormula = fromRight (CTLLabel []) $ runCTLParser "" mapping
 --     result = evaluateCTL parseFormula transitionSystem
 
 endToEndTests :: TestTree

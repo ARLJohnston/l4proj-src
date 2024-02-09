@@ -38,15 +38,15 @@ instance {-# OVERLAPPING #-} Arbitrary [Bool] where
 instance Arbitrary CTLFormula where
   arbitrary = sized ctlFormula'
     where
-      ctlFormula' 0 = liftM Satisfy arbitrary
+      ctlFormula' 0 = liftM CTLLabel arbitrary
       ctlFormula' n | n > 0 =
         oneof
           [
-              liftM  Satisfy arbitrary
-            , liftM  Atomic arbitrary
-            , liftM2 And phi psi
+              liftM  CTLLabel arbitrary
+            , liftM  CTLAtom arbitrary
+            , liftM2 CTLAnd phi psi
             , liftM2 Or phi psi
-            , liftM  Not phi
+            , liftM  CTLNot phi
             , liftM  ExistsNext phi
             , liftM2 ExistsPhiUntilPsi phi psi
             , liftM  ExistsAlways phi
@@ -110,47 +110,47 @@ prop_EvalReturnsSameLength formula m = length (evaluateCTL formula m) == length 
 *** Duality Laws
 #+BEGIN_SRC haskell
 prop_DualAllNextPhi :: CTLFormula -> [[Bool]] -> Bool
-prop_DualAllNextPhi phi m = evaluateCTL (ForAllNext phi) m == evaluateCTL (Not (ExistsNext (Not phi))) m
+prop_DualAllNextPhi phi m = evaluateCTL (ForAllNext phi) m == evaluateCTL (CTLNot (ExistsNext (CTLNot phi))) m
 
 prop_DualAllEventuallyPhi :: CTLFormula -> [[Bool]] -> Bool
-prop_DualAllEventuallyPhi phi m = evaluateCTL (ForAllEventually phi) m == evaluateCTL (Not (ExistsAlways (Not phi))) m
+prop_DualAllEventuallyPhi phi m = evaluateCTL (ForAllEventually phi) m == evaluateCTL (CTLNot (ExistsAlways (CTLNot phi))) m
 
 prop_DualExistsNextPhi :: CTLFormula -> [[Bool]] -> Bool
-prop_DualExistsNextPhi phi m = evaluateCTL (ExistsNext phi) m == evaluateCTL (Not (ForAllNext (Not phi))) m
+prop_DualExistsNextPhi phi m = evaluateCTL (ExistsNext phi) m == evaluateCTL (CTLNot (ForAllNext (CTLNot phi))) m
 
 prop_DualExistsEventuallyPhi :: CTLFormula -> [[Bool]] -> Bool
-prop_DualExistsEventuallyPhi phi m = evaluateCTL (ExistsEventually phi) m == evaluateCTL (Not (ForAllAlways (Not phi))) m
+prop_DualExistsEventuallyPhi phi m = evaluateCTL (ExistsEventually phi) m == evaluateCTL (CTLNot (ForAllAlways (CTLNot phi))) m
 
 prop_DualForAllPhiUntilPsi :: CTLFormula -> CTLFormula -> [[Bool]] -> Bool
-prop_DualForAllPhiUntilPsi phi psi m = evaluateCTL (ForAllPhiUntilPsi phi psi) m == evaluateCTL (And (Not (ExistsPhiUntilPsi (Not psi) (And (Not phi) (Not psi)))) (Not (ExistsAlways (Not psi)))) m
+prop_DualForAllPhiUntilPsi phi psi m = evaluateCTL (ForAllPhiUntilPsi phi psi) m == evaluateCTL (CTLAnd (CTLNot (ExistsPhiUntilPsi (CTLNot psi) (CTLAnd (CTLNot phi) (CTLNot psi)))) (CTLNot (ExistsAlways (CTLNot psi)))) m
 #+END_SRC
 
 *** Expansion Laws
 
 #+BEGIN_SRC haskell
 prop_ExpandForAllPhiUntilPsi :: CTLFormula -> CTLFormula -> [[Bool]] -> Bool
-prop_ExpandForAllPhiUntilPsi phi psi m = evaluateCTL (ForAllPhiUntilPsi phi psi) m == evaluateCTL (Or psi (And (phi) (ForAllNext (ForAllPhiUntilPsi phi psi)))) m
+prop_ExpandForAllPhiUntilPsi phi psi m = evaluateCTL (ForAllPhiUntilPsi phi psi) m == evaluateCTL (Or psi (CTLAnd (phi) (ForAllNext (ForAllPhiUntilPsi phi psi)))) m
 
 prop_ExpandForAllEventaullyPhi :: CTLFormula -> [[Bool]] -> Bool
 prop_ExpandForAllEventaullyPhi phi m = evaluateCTL (ForAllEventually phi) m == evaluateCTL (Or phi (ForAllNext (ForAllEventually phi))) m
 
 prop_ExpandForAllAlwaysPhi :: CTLFormula -> [[Bool]] -> Bool
-prop_ExpandForAllAlwaysPhi phi m = evaluateCTL (ForAllAlways phi) m == evaluateCTL (And phi (ForAllNext (ForAllAlways phi))) m
+prop_ExpandForAllAlwaysPhi phi m = evaluateCTL (ForAllAlways phi) m == evaluateCTL (CTLAnd phi (ForAllNext (ForAllAlways phi))) m
 
 prop_ExpandExistsPhiUntilPsi :: CTLFormula -> CTLFormula -> [[Bool]] -> Bool
-prop_ExpandExistsPhiUntilPsi phi psi m = evaluateCTL (ExistsPhiUntilPsi phi psi) m == evaluateCTL (Or psi (And phi (ExistsNext (ExistsPhiUntilPsi phi psi)))) m
+prop_ExpandExistsPhiUntilPsi phi psi m = evaluateCTL (ExistsPhiUntilPsi phi psi) m == evaluateCTL (Or psi (CTLAnd phi (ExistsNext (ExistsPhiUntilPsi phi psi)))) m
 
 prop_ExpandExistsEventuallyPhi :: CTLFormula -> [[Bool]] -> Bool
 prop_ExpandExistsEventuallyPhi phi m = evaluateCTL (ExistsEventually phi) m == evaluateCTL (Or phi (ExistsNext (ExistsEventually phi))) m
 
 prop_ExpandExistsAlwaysPhi :: CTLFormula -> [[Bool]] -> Bool
-prop_ExpandExistsAlwaysPhi phi m = evaluateCTL (ExistsAlways phi) m == evaluateCTL (And phi (ExistsNext (ExistsAlways phi))) m
+prop_ExpandExistsAlwaysPhi phi m = evaluateCTL (ExistsAlways phi) m == evaluateCTL (CTLAnd phi (ExistsNext (ExistsAlways phi))) m
 #+END_SRC
 
 *** Distributive Laws
 #+BEGIN_SRC haskell
 prop_DistForAllAlwaysPhiAndPsi :: CTLFormula -> CTLFormula -> [[Bool]] -> Bool
-prop_DistForAllAlwaysPhiAndPsi phi psi m = evaluateCTL (ForAllAlways (And phi psi)) m == evaluateCTL (And (ForAllAlways phi) (ForAllAlways psi)) m
+prop_DistForAllAlwaysPhiAndPsi phi psi m = evaluateCTL (ForAllAlways (CTLAnd phi psi)) m == evaluateCTL (CTLAnd (ForAllAlways phi) (ForAllAlways psi)) m
 
 prop_DistExistsEventuallyPhiOrPsi :: CTLFormula -> CTLFormula -> [[Bool]] -> Bool
 prop_DistExistsEventuallyPhiOrPsi phi psi m = evaluateCTL (ExistsEventually (Or phi psi)) m == evaluateCTL (Or (ExistsEventually phi) (ExistsEventually psi)) m

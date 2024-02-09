@@ -43,11 +43,11 @@ extendBy prior step m = posterior
 
 -- | Recursive Data Structure representing a CTLFormula.
 data CTLFormula =
-    Satisfy [Bool]
-  | Atomic [Bool]
-  | And CTLFormula CTLFormula
+    CTLLabel [Bool]
+  | CTLAtom [Bool]
+  | CTLAnd CTLFormula CTLFormula
   | Or CTLFormula CTLFormula
-  | Not CTLFormula
+  | CTLNot CTLFormula
   | ExistsNext CTLFormula
   | ExistsPhiUntilPsi CTLFormula CTLFormula
   | ExistsAlways CTLFormula
@@ -59,11 +59,11 @@ data CTLFormula =
     deriving (Eq)
 
 instance Show CTLFormula where
-  show (Satisfy satisfy) = "Sat(" ++ show satisfy ++ ")"
-  show (Atomic satisfy) = "Sat(" ++ show satisfy ++ ")"
-  show (And phi psi) = "(" ++ show phi ++ ") ^ (" ++ show psi ++ ")"
+  show (CTLLabel satisfy) = "Sat(" ++ show satisfy ++ ")"
+  show (CTLAtom satisfy) = "Sat(" ++ show satisfy ++ ")"
+  show (CTLAnd phi psi) = "(" ++ show phi ++ ") ^ (" ++ show psi ++ ")"
   show (Or phi psi) = "(" ++ show phi ++ ") v (" ++ show psi ++ ")"
-  show (Not phi) = "¬(" ++ show phi ++ ")"
+  show (CTLNot phi) = "¬(" ++ show phi ++ ")"
   show (ExistsNext phi) = "∃X(" ++ show phi ++ ")" 
   show (ExistsPhiUntilPsi phi psi) = "∃((" ++ show phi ++ ") U (" ++ show psi ++ "))"
   show (ExistsAlways phi) = "∃☐(" ++ show phi ++ ")"
@@ -79,19 +79,19 @@ instance Show CTLFormula where
 -- > transitionSystem = [[True, False],[True, True]]
 -- >
 -- > formula :: CTLFormula
--- > formula = And (Satisfy [True, True]) (Satisfy [False, True])
+-- > formula = CTLAnd (CTLLabel [True, True]) (CTLLabel [False, True])
 -- >
 -- > evaluateCTL formula transitionSystem = [False, True]
 evaluateCTL :: CTLFormula -> [[Bool]]-> [Bool]
-evaluateCTL (Satisfy satisfy) _ = satisfy
+evaluateCTL (CTLLabel satisfy) _ = satisfy
 
-evaluateCTL (Atomic satisfy) _ = satisfy
+evaluateCTL (CTLAtom satisfy) _ = satisfy
 
-evaluateCTL (And phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
+evaluateCTL (CTLAnd phi psi) m = zipWith (&&) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
 
 evaluateCTL (Or phi psi) m = zipWith (||) (evaluateCTL phi m) (evaluateCTL psi m) `using` parList rseq
 
-evaluateCTL (Not phi) m = map not (evaluateCTL phi m) `using` parList rseq
+evaluateCTL (CTLNot phi) m = map not (evaluateCTL phi m) `using` parList rseq
 
 evaluateCTL (ExistsNext phi) m = lastPhi
   where
@@ -126,7 +126,7 @@ evaluateCTL (ForAllAlways phi) m = map not (existsPhiUntilPsi m true notPhi) `us
 evaluateCTL (ExistsEventually phi) m = map not alwaysNotPhi `using` parList rseq
   where
     notPhi = map not (evaluateCTL phi m) `using` parList rseq
-    forAllAlwaysNotPhi = ForAllAlways (Satisfy notPhi)
+    forAllAlwaysNotPhi = ForAllAlways (CTLLabel notPhi)
     alwaysNotPhi = evaluateCTL forAllAlwaysNotPhi m
 
 -- | Return the states where ∃ΦUΨ holds.

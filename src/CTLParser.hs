@@ -28,7 +28,7 @@ ctlParser = do
   maybePsi <- end ["^"]
   case maybePsi of
     Nothing -> return phi
-    Just psi -> return (And phi psi)
+    Just psi -> return (CTLAnd phi psi)
 
 -- Non-Recursive parser
 satisfactionParser :: CTLParser CTLFormula
@@ -37,7 +37,7 @@ satisfactionParser = do
   spaces
   value <- choice $ map (try . string) $ getKeys lookupTable
   case lookup value lookupTable of
-    Just sat -> return $ Satisfy sat
+    Just sat -> return $ CTLLabel sat
     Nothing -> fail "Unable to match any given SAT values"
 
 -- Start parsers
@@ -61,7 +61,7 @@ end op =
   where
     getEnd = do
       spaces
-      choice $ map (try . string) $ op--string op
+      choice $ map (try . string) op
       spaces
       Just <$> ctlParser
 
@@ -92,55 +92,55 @@ groupParser = do
 forAllParser :: CTLParser CTLFormula
 forAllParser = do
   spaces
-  try (string "∀") <|> try (string "forAll")
+  choice $ map (try . string) ["∀", "forAll", "A"]
   phi <- ctlParser
   return (ForAllPhiUntilPsi phi phi)
 
 existsParser :: CTLParser CTLFormula
 existsParser = do
   spaces
-  try (string "∃") <|> try (string "exists")
+  choice $ map (try . string) ["∃", "exists", "E"]
   phi <- ctlParser
   return (ExistsPhiUntilPsi phi phi)
 
 notParser :: CTLParser CTLFormula
 notParser = do
   spaces
-  try (string "¬") <|> try (string "not")
-  Not <$> ctlParser
+  choice $ map (try . string) ["¬", "not", "!"]
+  CTLNot <$> ctlParser
 
 existsNextParser :: CTLParser CTLFormula
 existsNextParser = do
   spaces
-  try (string "∃X") <|> try (string "existsNext")
+  choice $ map (try . string) ["∃X", "existsNext", "EX"]
   ExistsNext <$> ctlParser
 
 existsAlwaysParser :: CTLParser CTLFormula
 existsAlwaysParser = do
   spaces
-  try (string "∃☐") <|> try (string "existsAlways")
+  choice $ map (try . string) ["∃☐", "existsAlways", "EG"]
   ExistsAlways <$> ctlParser
 
 existsEventuallyParser :: CTLParser CTLFormula
 existsEventuallyParser = do
   spaces
-  try (string "∃◇") <|> try (string "existsEventually")
+  choice $ map (try . string) ["∃◇", "existsEventually", "EF"]
   ExistsEventually <$> ctlParser
 
 forAllNextParser :: CTLParser CTLFormula
 forAllNextParser = do
   spaces
-  try (string "∀X") <|> try (string "forAllNext")
+  choice $ map (try . string) ["∀X", "forAllNext", "AX"]
   ForAllNext <$> ctlParser
 
 forAllEventuallyParser :: CTLParser CTLFormula
 forAllEventuallyParser = do
   spaces
-  try (string "∀◇") <|> try (string "forAllEventually")
+  choice $ map (try . string) ["∀◇", "forAllEventually", "AF"]
   ForAllEventually <$> ctlParser
 
 forAllAlwaysParser :: CTLParser CTLFormula
 forAllAlwaysParser = do
   spaces
-  try (string "∀☐") <|> try (string "forAllAlways")
+  choice $ map (try . string) ["∀☐", "forAllAlways", "AG"]
   ForAllAlways <$> ctlParser
