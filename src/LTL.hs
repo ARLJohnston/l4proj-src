@@ -49,7 +49,7 @@ import Data.List (intercalate)
   --getElement (x:xs) elem = if x == elem then xs else getElement xs elem
 
 -- https://www.fpcomplete.com/blog/tying-the-knot-haskell/
-data LTLStructure a = LTLStructure 
+data LTLStructure a = LTLStructure
   {
     -- prev  :: Maybe (Node a)
      nodeID :: Int
@@ -82,7 +82,7 @@ getValue :: LTLStructure a -> a
 getValue l = value l
 
 instance (Show a, Eq a) => Show (LTLStructure a) where
-   show l = show $ intercalate "->" $ map (show . getValue) $ getInfiniteList l [] 
+   show l = show $ intercalate "->" $ map (show . getValue) $ getInfiniteList l []
 
 instance Eq a => Eq (LTLStructure a) where
   -- Each Node in an LTL is required to have precisely one successor

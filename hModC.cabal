@@ -11,13 +11,15 @@ description:
   A model checking library that operates on an adjacency matrix representation of a transition system.
 
 common warnings
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints 
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
 
 library
   exposed-modules:
     CTL
     CTLParser
-  build-depends:    
+    LTL
+    LTLParser
+  build-depends:
       base >= 4.14.1.0 && < 5
     , parallel
     , parsec
@@ -25,12 +27,13 @@ library
   hs-source-dirs: src
   default-language: Haskell2010
 
-test-suite property-tests 
+test-suite property-tests
   type: exitcode-stdio-1.0
   main-is: Properties.hs
   other-modules:
     CTL
-  build-depends:    
+    LTL
+  build-depends:
       base >= 4.14.1.0
     , QuickCheck >= 2.14.2
     , parallel
@@ -39,13 +42,15 @@ test-suite property-tests
   hs-source-dirs:   src, test
   default-language: Haskell2010
 
-test-suite unit-tests 
+test-suite unit-tests
   type: exitcode-stdio-1.0
   main-is: Unit_Tests.hs
   other-modules:
     CTL
     CTLParser
-  build-depends:    
+    LTL
+    LTLParser
+  build-depends:
       base >= 4.14.1.0
     , tasty
     , tasty-hunit
