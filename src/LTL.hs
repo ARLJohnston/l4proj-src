@@ -2,9 +2,7 @@ module LTL (module LTL) where
 
 import Data.Graph (SCC(..), stronglyConnComp, flattenSCC)
 import Data.List (elemIndex, findIndices, elemIndices)
-import Control.Monad.State
 import Control.Lens
-import Debug.Trace
 
 import CTL
 
@@ -40,6 +38,7 @@ transitionByLabel ba l priorState =
 -- | Given a state and list of labelling sets return which sets have that labelling
 getStateLabelling :: Int -> [[Bool]] -> [Bool]
 getStateLabelling state = map (!! state)
+-- ETA reduction here makes this a partial function, then by writing getStateLabelling state labellingSets we apply the function to labellingSets as expected
 -- getStateLabelling state labellingSets = map (!! state) labellingSets
 
 
@@ -52,9 +51,9 @@ depthFirstSearch matrix visited vertex
     reachableStates s = elemIndices True (matrix !! s)
 
 {-
-DFS from initial
+dfs from initial
 Upon encountering an accepting state, begin nested DFS
-If nestedDFS finds the state then there is a cycle
+If ndfs finds the state then there is a cycle
 -}
 
 -- | If length elemIndices index (dfs ..) > 1 => cycle
@@ -88,18 +87,6 @@ detectAcceptingCycles matrix accepting initial = cycle
     result = dfs matrix accepting [] initial
     cycle = length result > 1 && head result == result !! (length result -1)
 
-
-
-
-
-
-
-
-
-
-
-
-
 adjMatrixToGraph :: [[Bool]] -> [(Int, Int, [Int])]
 adjMatrixToGraph mat = [(i, i, adj i) | i <- nodes]
   where
@@ -109,9 +96,16 @@ adjMatrixToGraph mat = [(i, i, adj i) | i <- nodes]
 getSCCs :: [[Bool]] -> [[Int]]
 getSCCs m = map flattenSCC (stronglyConnComp $ adjMatrixToGraph m)
 
-data BuchiAutomaton = BuchiAutomaton {
-  kripkeStructure :: [[Bool]],
-  labelling :: [Bool],
-  acceptingStates :: [Int]
-  } deriving (Show)
+-- data BuchiAutomaton = BuchiAutomaton {
+--   kripkeStructure :: [[Bool]],
+--   labelling :: [Bool],
+--   acceptingStates :: [Int]
+--   } deriving (Show)
+
+{-
+Büchi Automaton should have:
+  matrix :: [[Bool]]
+  labelling :: [Bool] OR [[Bool]]
+  accepting :: [Int]
+-}
 
