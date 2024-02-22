@@ -17,6 +17,7 @@ import Control.Monad
 import System.Exit (exitSuccess, exitFailure)
 
 import CTL
+import LTL
 
 import Data.List (nub, findIndices, intersect, union)
 import Data.Bool
@@ -85,6 +86,9 @@ prop_TSColLenEquivStatesLen sat ts = \n ->
     if n > 0 && n < length sat
         then length sat == length (pre ts n)
         else True
+
+prop_TarjanLeq :: [[Bool]] -> Bool
+prop_TarjanLeq ts = length (getSCCs ts) <= length ts
 #+END_SRC
 
 *** Transitioning tests 

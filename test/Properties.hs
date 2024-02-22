@@ -8,6 +8,7 @@ import Control.Monad
 import System.Exit (exitSuccess, exitFailure)
 
 import CTL
+import LTL
 
 import Data.List (nub, findIndices, intersect, union)
 import Data.Bool
@@ -67,6 +68,9 @@ prop_TSColLenEquivStatesLen sat ts = \n ->
     if n > 0 && n < length sat
         then length sat == length (pre ts n)
         else True
+
+prop_TarjanLeq :: [[Bool]] -> Bool
+prop_TarjanLeq ts = length (getSCCs ts) <= length ts
 
 prop_ExtendByInRangePre :: [Bool] -> [[Bool]] -> Bool
 prop_ExtendByInRangePre prior m = length (filter (\x -> x >= 0 && x <= (length m)) posterior) == length posterior
