@@ -2,7 +2,7 @@ module LTL (module LTL) where
 
 import Data.Graph (SCC(..), stronglyConnComp, flattenSCC)
 import Data.List (elemIndex, findIndices, elemIndices)
-import Control.Lens
+import qualified Data.Set as Set
 
 import CTL
 
@@ -23,26 +23,51 @@ instance Show LTLFormula where
   show (Next phi) = "X(" ++ show phi ++ ")"
   show (Until phi psi) = "(" ++ show phi ++ ") U (" ++ show psi ++ ")"
 
--- Buchi Automaton
 
--- | ASSUMES DETERMINISM
-transitionByLabel :: [[Bool]] -> [Bool] -> Int -> Int
-transitionByLabel ba l priorState =
-    case elemIndex True reachableSatLabel of
-      Nothing -> error "Buchi Automaton was not closed under transition" --This corresponds to the 'falling off case'
-      Just posteriorState -> posteriorState
+-- | Given a state in a Buchi automaton, return the state which satisfy one of the labels and are reachable from the state given or Nothing if no such state exists. This method assumes the automaton is deterministic.
+transitionByLabel :: [[Bool]] -> [Bool] -> Int -> Maybe Int
+transitionByLabel ba l priorState = elemIndex True reachableSatLabel
   where
     nextStates = ba !! priorState
     reachableSatLabel = zipWith (&&) l nextStates
 
--- | Given a state and list of labelling sets return which sets have that labelling
-getStateLabelling :: Int -> [[Bool]] -> [Bool]
-getStateLabelling state = map (!! state)
--- ETA reduction here makes this a partial function, then by writing getStateLabelling state labellingSets we apply the function to labellingSets as expected
--- getStateLabelling state labellingSets = map (!! state) labellingSets
 
+-- | Given a Kripke structure and Buchi automaton, create the synchronous product
+createSynchronousProduct :: [[Bool]] -> [[Bool]] -> [Int] -> [[Bool]]
+createSynchronousProduct kripke buchi labelling = syn
+  where
+    syn = map (
+      \kripkeState -> map (\index ->
+        case transitionByLabel buchi (buchi !! index) kripkeState of
+          Nothing -> False
+          Just _ -> True
+        ) [0..length buchi-1]
+      ) [0..length kripke-1]
+{-
+for s in kripke:
+  for q in buchi:
+    for state in post(s) 
+      
+      case transition q by labelling(t) of
+        Just _ -> (s,q) -> (t, q')
+        Nothing -> No transition
 
--- | Basic depth first search
+Resulting size is length kripke * length buchi
+Accepting is the columns of previous accepting
+-}
+
+-- | Given a Kripke structure and a Buchi automaton, determine if the formula is refuted
+evaluateLTL :: [[Bool]] -> [[Bool]] -> [Int] -> Int -> Bool
+evaluateLTL transitionSystem buchi labelling initial = refuted
+  where
+    syn = createSynchronousProduct transitionSystem buchi labelling
+    bsccs = getBSCCs syn
+  --get reachable BSCCs from initial state
+    reachableBsccs = depthFirstSearch syn [] initial
+    --check if any of the reachable BSCCs contain an accepting state and at least one edge contained in the scc
+    refuted = any (\bscc -> any (`elem` labelling) bscc && any (`elem` bscc) reachableBsccs) bsccs
+
+-- | Depth first search
 depthFirstSearch :: [[Bool]] -> [Int] -> Int -> [Int]
 depthFirstSearch matrix visited vertex
   | vertex `elem` visited = visited
@@ -50,13 +75,7 @@ depthFirstSearch matrix visited vertex
   where
     reachableStates s = elemIndices True (matrix !! s)
 
-{-
-dfs from initial
-Upon encountering an accepting state, begin nested DFS
-If ndfs finds the state then there is a cycle
--}
-
--- | If length elemIndices index (dfs ..) > 1 => cycle
+-- Worse approach to computing satisfiability
 ndfs :: [[Bool]] -> [Int] -> Int -> [Int]
 ndfs matrix visited vertex
   | vertex `elem` visited = vertex:visited
@@ -69,43 +88,42 @@ dfs :: [[Bool]] -> [Int] -> [Int] -> Int -> [Int]
 dfs matrix accepting visited vertex
   | vertex `elem` visited = visited
   | otherwise =
-     if vertex `elem` accepting
-       then
-         if length (ndfs matrix [] vertex) > 1
-           then
-             ndfs matrix [] vertex
-           else
-             foldl (dfs matrix accepting) (vertex:visited) (reachableStates vertex)
-       else
-         foldl (dfs matrix accepting) (vertex:visited) (reachableStates vertex)
+     if vertex `elem` accepting && length (ndfs matrix [] vertex) > 1 then ndfs matrix [] vertex else foldl (dfs matrix accepting) (vertex:visited) (reachableStates vertex)
   where
     reachableStates s = elemIndices True (matrix !! s)
 
+-- | Given a Kripke structure and a Buchi automaton, get if an accepting cycle exists
 detectAcceptingCycles :: [[Bool]] -> [Int] -> Int -> Bool
 detectAcceptingCycles matrix accepting initial = cycle
   where
     result = dfs matrix accepting [] initial
     cycle = length result > 1 && head result == result !! (length result -1)
 
+-- | Convert a adjacency matrix to a graph
 adjMatrixToGraph :: [[Bool]] -> [(Int, Int, [Int])]
 adjMatrixToGraph mat = [(i, i, adj i) | i <- nodes]
   where
     nodes = [0..length mat-1]
     adj i = [ j | (j, True) <- zip [0..] (mat !! i) ]
 
+-- | Get the strongly connected components of a graph
 getSCCs :: [[Bool]] -> [[Int]]
 getSCCs m = map flattenSCC (stronglyConnComp $ adjMatrixToGraph m)
 
--- data BuchiAutomaton = BuchiAutomaton {
---   kripkeStructure :: [[Bool]],
---   labelling :: [Bool],
---   acceptingStates :: [Int]
---   } deriving (Show)
+-- | Get the post states of a state as [Int]
+postInt :: [[Bool]] -> Int -> [Int]
+postInt m i = elemIndices True (m !! i)
 
-{-
-Büchi Automaton should have:
-  matrix :: [[Bool]]
-  labelling :: [Bool] OR [[Bool]]
-  accepting :: [Int]
--}
+-- | Get the post states of a list of states as [Int]
+postListInt :: [[Bool]] -> [Int] -> [Int]
+postListInt m = concatMap (postInt m)
 
+-- | Check if a list of states is closed under the transition relation
+closed :: [Int] -> [[Bool]] -> Bool
+closed x m = Set.fromList x == Set.fromList (postListInt m x)
+
+-- | Get the bottom/terminal strongly connected components of a graph
+getBSCCs :: [[Bool]] -> [[Int]]
+getBSCCs m = filter (`closed` m) sccs
+  where
+    sccs = getSCCs m
