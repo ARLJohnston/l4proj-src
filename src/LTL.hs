@@ -46,8 +46,8 @@ createSynchronousProduct kripke buchi labelling = syn
 {-
 for s in kripke:
   for q in buchi:
-    for state in post(s) 
-      
+    for state in post(s)
+
       case transition q by labelling(t) of
         Just _ -> (s,q) -> (t, q')
         Nothing -> No transition
@@ -57,15 +57,15 @@ Accepting is the columns of previous accepting
 -}
 
 -- | Given a Kripke structure and a Buchi automaton, determine if the formula is refuted
-evaluateLTL :: [[Bool]] -> [[Bool]] -> [Int] -> Int -> Bool
-evaluateLTL transitionSystem buchi labelling initial = refuted
+evaluateLTL :: [[Bool]] -> [[Bool]] -> [Int] -> Int -> (Bool, Maybe [Int])
+evaluateLTL transitionSystem buchi labelling initial = (refuted, prefix)
   where
     syn = createSynchronousProduct transitionSystem buchi labelling
     bsccs = getBSCCs syn
   --get reachable BSCCs from initial state
     reachableBsccs = depthFirstSearch syn [] initial
-    --check if any of the reachable BSCCs contain an accepting state and at least one edge contained in the scc
     refuted = any (\bscc -> any (`elem` labelling) bscc && any (`elem` bscc) reachableBsccs) bsccs
+    prefix = if refuted then Just reachableBsccs else Nothing
 
 -- | Depth first search
 depthFirstSearch :: [[Bool]] -> [Int] -> Int -> [Int]
