@@ -7,7 +7,8 @@ import CTL
 import CTLParser
 
 import LTL
-import LTLParser
+
+import TransitionSystem
 
 import Data.Either (fromRight, isLeft)
 
@@ -33,6 +34,18 @@ satB = [True,True,True,False,True,False,False,False]
 satC :: [Bool]
 satC = [True,False,True,False,False,True,True,False]
 
+tarjan :: [[Bool]]
+tarjan =
+  [
+    [False, True, False, False, False, False, False],
+    [False, False, True, False, True, True, False],
+    [False, False, False, True, False, True, False],
+    [False, False, False, False, False, False, True],
+    [True, False, False, False, False, True, False],
+    [False, False, True, False, False, False, True],
+    [False, False, True, True, False, False, False]
+  ]
+
 testExistsAlwaysPhi :: TestTree
 testExistsAlwaysPhi = testCase "Exists Always B" $ existsAlwaysPhi transitionSystem satB @?= [True,False,True,False,True,False,False,False]
 
@@ -46,6 +59,8 @@ transitionSystemTests = testGroup "Tests on Transition System from Figure 6.11 i
     , testCase "Post on 6.11" $ transitionSystem `post` 7 @?= [False,False,False,True,False,False,True,False]
     , testExistsAlwaysPhi
     , testExistsPhiUntilPsi
+    , testCase "DFS" $ depthFirstSearch transitionSystem [] 0 @?= [3, 1, 2, 0]
+    , testCase "Tarjan's Algorithm" $ getSCCs tarjan @?= [[2, 3, 6, 5],[0, 1, 4]]
   ]
 
 satA_CTL :: CTLFormula
@@ -254,53 +269,6 @@ compositeParserTests = testGroup "Composite Expression tests for the CTLParser"
     , testCTLParseForAllAlwaysWithNot
   ]
 
--- testLTLParseFail :: TestTree
--- testLTLParseFail = testCase "Parse (\"\") -> Fail" $ isLeft parseResult @?= True
---   where
---     parseResult = runLTLParser "" lookupTable
-
-testLTLParseSatisfy :: TestTree
-testLTLParseSatisfy = testCase "Parse (\"satA\")" $ parseResult @?= LTLLabel [False, False]
-  where
-    maybeParseResult = runLTLParser "satA" lookupTable
-    parseResult = fromRight (LTLLabel []) maybeParseResult
-
-testLTLParseAnd :: TestTree
-testLTLParseAnd = testCase "Parse (\"satB^satC\")" $ parseResult @?= LTLAnd (LTLLabel [False, True]) (LTLLabel [True, False])
-  where
-    maybeParseResult = runLTLParser "satB^satC" lookupTable
-    parseResult = fromRight (LTLLabel []) maybeParseResult
-
-testLTLParseNot :: TestTree
-testLTLParseNot = testCase "Parse (\"¬satD\")" $ parseResult @?= LTLNot (LTLLabel [True, True])
-  where
-    maybeParseResult = runLTLParser "¬satD" lookupTable
-    parseResult = fromRight (LTLLabel []) maybeParseResult
-
-testLTLParseNext :: TestTree
-testLTLParseNext = testCase "Parse (\"XsatA\")" $ parseResult @?= Next (LTLLabel [False, False])
-  where
-    maybeParseResult = runLTLParser "XsatA" lookupTable
-    parseResult = fromRight (LTLLabel []) maybeParseResult
-
-testLTLParseUntil :: TestTree
-testLTLParseUntil = testCase "Parse (\"satBUsatC\")" $ parseResult @?= Until (LTLLabel [False, True]) (LTLLabel [True, False])
-  where
-    maybeParseResult = runLTLParser "satBUsatC" lookupTable
-    parseResult = fromRight (LTLLabel []) maybeParseResult
-
-
-individualLTLParserTests :: TestTree
-individualLTLParserTests = testGroup "Individual Expression tests for the LTLParser"
-  [
-      --testLTLParseFail
-      testLTLParseSatisfy
-    , testLTLParseAnd
-    , testLTLParseNot
-    , testLTLParseNext
-    , testLTLParseUntil
-  ]
-
 mapping :: [([Char], [Bool])]
 mapping =
   [
@@ -371,7 +339,6 @@ testSets = testGroup "All sets of tests"
     , individualParserTests
     , compositeParserTests
     , endToEndTests
-    , individualLTLParserTests
   ]
 
 main :: IO ()

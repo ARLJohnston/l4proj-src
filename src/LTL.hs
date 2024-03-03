@@ -1,106 +1,99 @@
 module LTL (module LTL) where
 
-import Data.List (intercalate)
+import Data.Graph (SCC(..), stronglyConnComp, flattenSCC)
+import Data.List (elemIndex, findIndices, elemIndices)
+import qualified Data.Set as Set
+import Control.Parallel.Strategies
 
---https://book.realworldhaskell.org/read/using-typeclasses.html
--- https://hackage.haskell.org/package/base-4.19.0.0/docs/src/Data.Foldable.html#Foldable
+import TransitionSystem
 
---class SinglyLinkedList l where
---    insert :: a -> l a -> l a
---    isEmpty :: l a -> Bool
---    post :: (Eq a) => l a -> a -> l a
---
---instance SinglyLinkedList [] where
---    insert x xs = x:xs
---    isEmpty [] = True
---    isEmpty _  = False
---    post [] _ = []
---    post (x:xs) elem = if x == elem then xs else post xs elem
---
----- Define the instance for the SinglyLinkedList typeclass
---data Node a = Node a (Node a) | Empty deriving Show
---
---instance SinglyLinkedList Node where
---    insert x xs = Node x xs
---
---
---    isEmpty Empty = True
---    isEmpty _     = False
---
---    post Empty _ = Empty
---    post (Node x xs) elem = if x == elem then xs else post xs elem
+-- | Given a state in a Buchi automaton, return the state which satisfy one of the labels and are reachable from the state given or Nothing if no such state exists. This method assumes the automaton is deterministic.
+transitionByLabel :: [[Bool]] -> [Bool] -> Int -> Maybe Int
+transitionByLabel ba l priorState = elemIndex True reachableSatLabel
+  where
+    nextStates = ba !! priorState
+    reachableSatLabel = zipWith (&&) l nextStates `using` parList rseq
 
---class LTL l where
---  pre :: l a -> Int -> Maybe a
---  post :: l a -> Int -> Maybe a
---  getElement :: l a -> Int -> Maybe a
---
---instance LTL [] where
---  pre [] _ = Nothing
---  pre l n = getElement l (n-1)
---
---  post [] _ = Nothing
---  post l n = getElement l (n+1)
---
---  getElement [] _ = Nothing
---  getElement l n
---    | n>=0 && n < length l = Just (l !! n)
---    | otherwise = Nothing
-  --getElement (x:xs) elem = if x == elem then xs else getElement xs elem
 
--- https://www.fpcomplete.com/blog/tying-the-knot-haskell/
-data LTLStructure a = LTLStructure
-  {
-    -- prev  :: Maybe (Node a)
-     nodeID :: Int
-  ,  value :: a
-  ,  next  :: LTLStructure a
-  }
+-- | Given a Kripke structure and Buchi automaton, create the synchronous product
+createSynchronousProduct :: [[Bool]] -> [[Bool]] -> [Int] -> [[Bool]]
+createSynchronousProduct kripke buchi labelling = syn
+  where
+    syn = map (
+      \kripkeState -> map (\index ->
+        case transitionByLabel buchi (buchi !! index) kripkeState of
+          Nothing -> False
+          Just _ -> True
+        ) [0..length buchi-1] `using` parList rseq
+      ) [0..length kripke-1] `using` parList rseq
 
---data ListWithHistory a = ListWithHistory [a] [a]
---
---instance (Show a) => Show (ListWithHistory a) where
---    show (ListWithHistory visited current) = "ListWithHistory " ++ show visited ++ " " ++ show current
---
---main :: IO ()
---main = do
---    let myList = ListWithHistory [] [1, 2, 3, 4, 5]
---    putStrLn $ show myList
+-- | Given a Kripke structure and a Buchi automaton, determine if the formula is refuted
+evaluateLTL :: [[Bool]] -> [[Bool]] -> [Int] -> Int -> (Bool, Maybe [Int])
+evaluateLTL transitionSystem buchi labelling initial = (refuted, prefix)
+  where
+    syn = createSynchronousProduct transitionSystem buchi labelling
+    bsccs = getBSCCs syn
+    reachableBsccs = depthFirstSearch syn [] initial
+    refuted = any (\bscc -> any (`elem` labelling) bscc && any (`elem` bscc) reachableBsccs) bsccs
+    prefix = if refuted then Just reachableBsccs else Nothing
 
---getInfiniteList :: Eq a => [a] -> [a] -> [a]
---getInfiniteList [] _ = []
---getInfiniteList (x:xs) accumulator
---  | x `elem` accumulator = accumulator ++ [x]
---  | otherwise = getInfiniteList xs (accumulator ++ [x])
+-- | Depth first search
+depthFirstSearch :: [[Bool]] -> [Int] -> Int -> [Int]
+depthFirstSearch matrix visited vertex
+  | vertex `elem` visited = visited
+  | otherwise = foldl (depthFirstSearch matrix) (vertex:visited) (reachableStates vertex) `using` parList rseq
+  where
+    reachableStates s = elemIndices True (matrix !! s)
 
-getInfiniteList :: Eq a => LTLStructure a -> [LTLStructure a] -> [LTLStructure a]
-getInfiniteList l accumulator
-  | l `elem` accumulator = accumulator ++ [l]
-  | otherwise = getInfiniteList (next l) (accumulator ++ [l])
+-- Worse approach to computing satisfiability
+ndfs :: [[Bool]] -> [Int] -> Int -> [Int]
+ndfs matrix visited vertex
+  | vertex `elem` visited = vertex:visited
+  | otherwise = foldl (ndfs matrix) (vertex:visited) (reachableStates vertex) `using` parList rseq
+  where
+    reachableStates s = elemIndices True (matrix !! s)
 
-getValue :: LTLStructure a -> a
-getValue l = value l
+-- | Depth first search that runs ndfs if vertex is in accepting
+dfs :: [[Bool]] -> [Int] -> [Int] -> Int -> [Int]
+dfs matrix accepting visited vertex
+  | vertex `elem` visited = visited
+  | otherwise =
+     if vertex `elem` accepting && length (ndfs matrix [] vertex) > 1 then ndfs matrix [] vertex else foldl (dfs matrix accepting) (vertex:visited) (reachableStates vertex) `using` parList rseq
+  where
+    reachableStates s = elemIndices True (matrix !! s)
 
-instance (Show a, Eq a) => Show (LTLStructure a) where
-   show l = show $ intercalate "->" $ map (show . getValue) $ getInfiniteList l []
+-- | Given a Kripke structure and a Buchi automaton, get if an accepting cycle exists
+detectAcceptingCycles :: [[Bool]] -> [Int] -> Int -> Bool
+detectAcceptingCycles matrix accepting initial = cycle
+  where
+    result = dfs matrix accepting [] initial
+    cycle = length result > 1 && head result == result !! (length result -1)
 
-instance Eq a => Eq (LTLStructure a) where
-  -- Each Node in an LTL is required to have precisely one successor
-  (==) a b = nodeID a == nodeID b
+-- | Convert a adjacency matrix to a graph
+adjMatrixToGraph :: [[Bool]] -> [(Int, Int, [Int])]
+adjMatrixToGraph mat = [(i, i, adj i) | i <- nodes]
+  where
+    nodes = [0..length mat-1]
+    adj i = [ j | (j, True) <- zip [0..] (mat !! i) ]
 
-data LTLFormula =
-    LTLLabel [Bool]
-  | LTLAtom [Bool]
-  | LTLAnd LTLFormula LTLFormula
-  | LTLNot LTLFormula
-  | Next LTLFormula
-  | Until LTLFormula LTLFormula
-    deriving (Eq)
+-- | Get the strongly connected components of a graph
+getSCCs :: [[Bool]] -> [[Int]]
+getSCCs m = map flattenSCC (stronglyConnComp $ adjMatrixToGraph m) `using` parList rseq
 
-instance Show LTLFormula where
-  show (LTLLabel satisfy) = "Sat(" ++ show satisfy ++ ")"
-  show (LTLAtom satisfy) = "Sat(" ++ show satisfy ++ ")"
-  show (LTLAnd phi psi) = "(" ++ show phi ++ ") ^ (" ++ show psi ++ ")"
-  show (LTLNot phi) = "¬(" ++ show phi ++ ")"
-  show (Next phi) = "X(" ++ show phi ++ ")"
-  show (Until phi psi) = "(" ++ show phi ++ ") U (" ++ show psi ++ ")"
+-- | Get the post states of a state as [Int]
+postInt :: [[Bool]] -> Int -> [Int]
+postInt m i = elemIndices True (m !! i)
+
+-- | Get the post states of a list of states as [Int]
+postListInt :: [[Bool]] -> [Int] -> [Int]
+postListInt m = concatMap (postInt m)
+
+-- | Check if a list of states is closed under the transition relation
+closed :: [Int] -> [[Bool]] -> Bool
+closed x m = Set.fromList x == Set.fromList (postListInt m x)
+
+-- | Get the bottom/terminal strongly connected components of a graph
+getBSCCs :: [[Bool]] -> [[Int]]
+getBSCCs m = filter (`closed` m) sccs
+  where
+    sccs = getSCCs m

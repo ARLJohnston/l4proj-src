@@ -18,11 +18,12 @@ library
     CTL
     CTLParser
     LTL
-    LTLParser
+    TransitionSystem
   build-depends:
       base >= 4.14.1.0 && < 5
     , parallel
     , parsec
+    , containers
 
   hs-source-dirs: src
   default-language: Haskell2010
@@ -38,8 +39,9 @@ test-suite property-tests
     , QuickCheck >= 2.14.2
     , parallel
     , parsec
+    , containers
 
-  hs-source-dirs:   src, test
+  hs-source-dirs: src, test
   default-language: Haskell2010
 
 test-suite unit-tests
@@ -49,15 +51,29 @@ test-suite unit-tests
     CTL
     CTLParser
     LTL
-    LTLParser
+    TransitionSystem
   build-depends:
       base >= 4.14.1.0
     , tasty
     , tasty-hunit
     , parallel
     , parsec
+    , containers
 
-  hs-source-dirs:   src, test
+  hs-source-dirs: src, test
+  default-language: Haskell2010
+
+executable pop3-ctl
+  main-is: pop3_ctl.hs
+  build-depends:
+      base >= 4.14.1.0 && < 5
+    , parallel
+    , parsec
+  other-modules:
+      CTL
+    , CTLParser
+    , TransitionSystem
+  hs-source-dirs: src, case_study
   default-language: Haskell2010
 
 source-repository head

@@ -8,6 +8,8 @@ import Control.Monad
 import System.Exit (exitSuccess, exitFailure)
 
 import CTL
+import LTL
+import TransitionSystem
 
 import Data.List (nub, findIndices, intersect, union)
 import Data.Bool
@@ -28,25 +30,25 @@ instance Arbitrary CTLFormula where
     where
       ctlFormula' 0 = liftM CTLLabel arbitrary
       ctlFormula' n | n > 0 =
-        oneof
-          [
-              liftM  CTLLabel arbitrary
-            , liftM  CTLAtom arbitrary
-            , liftM2 CTLAnd phi psi
-            , liftM2 Or phi psi
-            , liftM  CTLNot phi
-            , liftM  ExistsNext phi
-            , liftM2 ExistsPhiUntilPsi phi psi
-            , liftM  ExistsAlways phi
-            , liftM  ExistsEventually phi
-            , liftM  ForAllNext phi
-            , liftM2 ForAllPhiUntilPsi phi psi
-            , liftM  ForAllEventually phi 
-            , liftM  ForAllAlways phi
-          ]
-        where
-        phi = ctlFormula' (n `div` 2)
-        psi = ctlFormula' (n `div` 2)
+	oneof
+	  [
+	      liftM  CTLLabel arbitrary
+	    , liftM  CTLAtom arbitrary
+	    , liftM2 CTLAnd phi psi
+	    , liftM2 Or phi psi
+	    , liftM  CTLNot phi
+	    , liftM  ExistsNext phi
+	    , liftM2 ExistsPhiUntilPsi phi psi
+	    , liftM  ExistsAlways phi
+	    , liftM  ExistsEventually phi
+	    , liftM  ForAllNext phi
+	    , liftM2 ForAllPhiUntilPsi phi psi
+	    , liftM  ForAllEventually phi
+	    , liftM  ForAllAlways phi
+	  ]
+	where
+	phi = ctlFormula' (n `div` 2)
+	psi = ctlFormula' (n `div` 2)
 
 prop_TSIsSquare :: [[Bool]] -> Bool
 prop_TSIsSquare m = if (length m) > 0 then length m == length (m !! 0) else True
@@ -59,14 +61,17 @@ prop_BoolList (x:xs) = if (x /= True && x /= False) then False else prop_BoolLis
 prop_TSRowLenEquivStatesLen :: [Bool] -> [[Bool]] -> Int -> Bool
 prop_TSRowLenEquivStatesLen sat ts = \n ->
     if n > 0 && n < length sat
-        then length sat == length (ts !! n)
-        else True
+	then length sat == length (ts !! n)
+	else True
 
 prop_TSColLenEquivStatesLen :: [Bool] -> [[Bool]]-> Int -> Bool
 prop_TSColLenEquivStatesLen sat ts = \n ->
     if n > 0 && n < length sat
-        then length sat == length (pre ts n)
-        else True
+	then length sat == length (pre ts n)
+	else True
+
+prop_TarjanLeq :: [[Bool]] -> Bool
+prop_TarjanLeq ts = length (getSCCs ts) <= length ts
 
 prop_ExtendByInRangePre :: [Bool] -> [[Bool]] -> Bool
 prop_ExtendByInRangePre prior m = length (filter (\x -> x >= 0 && x <= (length m)) posterior) == length posterior
@@ -128,6 +133,6 @@ main = do
   putStrLn "Running Tests"
   success <- $(quickCheckAll)
   if success then
-    putStrLn "All tests passed!" >> exitSuccess 
+    putStrLn "All tests passed!" >> exitSuccess
   else
     putStrLn "Some tests failed." >> exitFailure
