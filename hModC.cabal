@@ -18,7 +18,7 @@ library
     CTL
     CTLParser
     LTL
-    LTLParser
+    TransitionSystem
   build-depends:
       base >= 4.14.1.0 && < 5
     , parallel
@@ -51,7 +51,7 @@ test-suite unit-tests
     CTL
     CTLParser
     LTL
-    LTLParser
+    TransitionSystem
   build-depends:
       base >= 4.14.1.0
     , tasty
@@ -72,6 +72,7 @@ executable pop3-ctl
   other-modules:
       CTL
     , CTLParser
+    , TransitionSystem
   hs-source-dirs: src, case_study
   default-language: Haskell2010
 
