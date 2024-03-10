@@ -14,10 +14,6 @@ data Buchi = Buchi {
   , accepting :: [Int] -- Accepting indices
   } deriving Show
 
-data Kripke = Kripke {
-    kripkeTS :: [[Bool]]
-  , kripkeLabel :: [(Int, [Char])] --given a state (Int) can get the props in that state
-  } deriving Show
 
 getCommonElement :: Ord a => [a] -> [a] -> Bool
 getCommonElement xs ys = not $ Set.null $ Set.intersection (Set.fromList xs) (Set.fromList ys)

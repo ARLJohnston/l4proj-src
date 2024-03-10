@@ -3,6 +3,11 @@ module TransitionSystem (module TransitionSystem) where
 import Data.List (findIndices)
 import Control.Parallel.Strategies
 
+data Kripke = Kripke {
+    kripkeTS :: [[Bool]]
+  , kripkeLabel :: [(Int, [Char])] --given a state (Int) can get the props in that state
+  } deriving Show
+
 -- | Get the states of the transition system which can transition to the given state.
 pre :: [[a]] -> Int -> [a]
 pre [] _ = []

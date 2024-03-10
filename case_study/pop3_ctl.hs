@@ -17,57 +17,47 @@ pop3Transitions =
     [True, False, False, False, False, False, False]  -- Update
   ]
 
-{-
-Want to prove:
-Exists an execution which is never authenticated
-  ∃☐(¬auth)
-
-All paths are not authenticated until login
-  ∀(¬auth)U(login)
-
-Exists some path which follows the 'normal' exection
-  ∃(notConnected U (auth U (transaction U (update))))
-
--}
-
 lookupTable :: [([Char], [Bool])]
 lookupTable =
   [
-      ("auth", [False, False, True, True, True, True, True])
-    , ("login", [False, False, True, True, True, True, True])
-    , ("notConnected", [True, True, False, False, False, False, False])
-    , ("update", [False, False, False, False, False, False, True])
-    , ("transaction", [False, False, True, False, False, False, False])
+     ("notConnected", [True, False, False, False, False, False, False])
+   , ("authorization", [False, True, False, False, False, False, False])
+   , ("transaction", [False, False, True, False, False, False, False])
+   , ("list", [False, False, False, True, False, False, False])
+   , ("retrieve", [False, False, False, False, True, False, False])
+   , ("delete", [False, False, False, False, False, True, False])
+   , ("update", [False, False, False, False, False, False, True])
+   , ("authenticated", [False, False, True, True, True, True, True])
   ]
 
 neverAuthenticated :: CTLFormula
-neverAuthenticated = fromRight (CTLLabel []) $ runCTLParser "∃☐(¬auth)" lookupTable
+neverAuthenticated = fromRight(CTLLabel []) $ runCTLParser "∃☐(¬((¬notConnected)^(¬authorization)))" lookupTable
 
 notAuthenticatedUntilLogin :: CTLFormula
-notAuthenticatedUntilLogin = fromRight (CTLLabel []) $ runCTLParser "∀(¬auth)U(login)" lookupTable
+notAuthenticatedUntilLogin = fromRight (CTLLabel []) $ runCTLParser "∀(¬transaction)U(authenticated)" lookupTable
 
 normalExecution :: CTLFormula
-normalExecution = fromRight (CTLLabel []) $ runCTLParser "notConnected ^ (∃Xauth ^ (∃Xtransaction ^ (∃X update ^ ∃XnotConnected)))" lookupTable
+normalExecution = fromRight (CTLLabel []) $ runCTLParser "∃◇(notConnected ^ (∃Xauthorization ^ (∃Xtransaction ^ ∃Xupdate))))" lookupTable
+
+allUsersEventuallyUpdate :: CTLFormula
+allUsersEventuallyUpdate = fromRight(CTLLabel []) $ runCTLParser "∀◇update" lookupTable
 
 main :: IO()
 main = do
-  putStrLn "Result of: Exists an execution which is never authenticated: ∃☐(¬auth)"
+  putStrLn "Result of: Exists an execution which is never authenticated:"
   putStrLn $ show neverAuth
 
-  putStrLn "Result of: All paths are not authenticated until login: ∀(¬auth)U(login)"
+  putStrLn "Result of: All paths are not authenticated until login:"
   putStrLn $ show notAuthUntilLogin
 
-  putStrLn "Result of: Exists some path which follows the 'normal' exection: ∃(notConnected U (auth U (transaction U (update))))"
-  putStrLn $ show normalExec 
+  putStrLn "Result of: Exists some path which follows the 'normal' execution:"
+  putStrLn $ show normalExec
+
+  putStrLn "Result of: All users eventuallly update:"
+  putStrLn $ show allUsersExec
 
   where
+    normalExec = evaluateCTL normalExecution pop3Transitions
     neverAuth = evaluateCTL neverAuthenticated pop3Transitions
     notAuthUntilLogin = evaluateCTL notAuthenticatedUntilLogin pop3Transitions
-    normalExec = evaluateCTL normalExecution pop3Transitions
-
-  --print hello world
-
-
--- main :: IO ()
--- main = do
---   putStrLn "Hello, Haskell!"
+    allUsersExec = evaluateCTL allUsersEventuallyUpdate pop3Transitions

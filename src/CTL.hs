@@ -45,7 +45,7 @@ instance Show CTLFormula where
 -- > formula = CTLAnd (CTLLabel [True, True]) (CTLLabel [False, True])
 -- >
 -- > evaluateCTL formula transitionSystem = [False, True]
-evaluateCTL :: CTLFormula -> [[Bool]]-> [Bool]
+evaluateCTL :: CTLFormula -> [[Bool]] -> [Bool]
 evaluateCTL (CTLLabel satisfy) _ = satisfy
 
 evaluateCTL (CTLAtom satisfy) _ = satisfy

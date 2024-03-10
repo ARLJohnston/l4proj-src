@@ -1,4 +1,4 @@
-#+TITLE: The 'BLANK' Model Checker
+#+TITLE: hModC, the Haskell model checker
 #+Author: Alistair Johnston
 #+PROPERTY: header-args
 #+STARTUP: showeverything latexpreview
@@ -8,37 +8,48 @@
 | File          | Dir  | Purpose                             |
 |---------------+------+-------------------------------------|
 | [[./src/CTL.hs][CTL.hs]]        | src  | Defines CTLFormula and checker      |
+| [[./src/LTL.hs][LTL.hs]]        | src  | Defines LTL model checker           |
 | [[./src/CTLParser.hs][CTLParser.hs]]  | src  | Produces CTLFormula from plain text |
 | [[./test/Properties.hs][Properties.hs]] | test | Property based tests                |
 | [[./test/Unit_Tests.hs][Unit_Tests.hs]] | test | Unit tests                          |
+
 As model checking is a complex subject, org files have been included where appropriate to add further commentary.
 
 * Build Instructions
-Using Stack to build and use the library is highly recommended, however it is possible to build the library with other toolchains.
+Stack and Docker are the recommended ways of running the project.
 
-To run the library interactively within GHCI simply use:
+To run the library interactively within GHCI use either:
 #+BEGIN_SRC shell
 stack ghci
 #+END_SRC
-Which will create a GHCI instance with CTL and CTLParser exports loaded, the user can then use the functions provided by the library to check models.
+
+#+BEGIN_SRC shell
+docker build . -t hmodc
+docker run -it hmodc
+#+END_SRC
+Which will create a GHCI instance with all the exports loaded, the user can then use the functions provided by the library to check models.
 
 ** Requirements
-The library requires a working stack distribution.
+The library requires either a working stack distribution or a working docker distribution.
 
 ** Build Steps
+Either
 #+BEGIN_SRC shell
 stack build
+#+END_SRC
+#+BEGIN_SRC shell
+docker build . -t hmodc
 #+END_SRC
 
 ** Test Steps
 #+BEGIN_SRC shell
 stack test
 #+END_SRC
-
+Docker option runs tests as part of the build.
 
 * QuickStart
 ** Transition System
-Transition Systems are represented by an adjacency [[https://hackage.haskell.org/package/matrix-0.3.6.1/docs/Data-Matrix.html][matrix]].
+Transition Systems are represented by an adjacency matrix
 #+BEGIN_SRC haskell
 transitionSystem :: Matrix Bool
 transitionSystem = fromLists
@@ -49,7 +60,7 @@ transitionSystem = fromLists
   ]
 #+END_SRC
 
-** CTLFormula
+** CTL
 *** Parser
 Parsing a formula can be done as such:
 #+BEGIN_SRC haskell
@@ -76,8 +87,13 @@ satC = Satisfaction [False, False, True]
 formula = And satA (And (Not satB) satC)
 #+END_SRC
 
-** Evaluating CTL Formulae
+*** Evaluation
 #+BEGIN_SRC haskell
 result = evaluateCTL formula transitionSystem
 -- > result = [False, False, False]
 #+END_SRC
+
+
+** LTL
+*** Formula
+LTL formulae are represented using Büchi automata and can be created using [[http://www.lsv.fr/~gastin/ltl2ba/][LTL2BA]] or similar, an example of use is presented in [[./case_study/pop3_ltl.hs][the case study]]
