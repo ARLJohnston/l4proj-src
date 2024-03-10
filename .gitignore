@@ -3,6 +3,7 @@
 
 #Now add back what we want
 !LICENSE
+!Dockerfile
 !stack.yaml
 !stack.yaml.lock
 !hModC.cabal
