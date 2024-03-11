@@ -5,12 +5,11 @@ import Data.List (elemIndex, findIndices, elemIndices, find)
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as Set
 import Control.Parallel.Strategies
-import Debug.Trace
 
 import TransitionSystem
 
 data Buchi = Buchi {
-    buchiTS :: [[Maybe Char]]
+    buchiTS :: [[Maybe String]]
   , accepting :: [Int] -- Accepting indices
   } deriving Show
 
@@ -18,7 +17,7 @@ data Buchi = Buchi {
 getCommonElement :: Ord a => [a] -> [a] -> Bool
 getCommonElement xs ys = not $ Set.null $ Set.intersection (Set.fromList xs) (Set.fromList ys)
 
-getPropositionsPostKripke :: Kripke -> Int -> [Char]
+getPropositionsPostKripke :: Kripke -> Int -> [String]
 getPropositionsPostKripke k prior = concat propositions
   where
     posterior = elemIndices True $ post (kripkeTS k) prior
@@ -90,30 +89,3 @@ getBSCCs :: [[Bool]] -> [[Int]]
 getBSCCs m = filter (`closed` m) sccs
   where
     sccs = getSCCs m
-
--- evaluateLTL :: Eq a => [[Bool]] -> BuchiState a -> [[a]] -> (Bool, Maybe [Int])
--- evaluateLTL transitionSystem buchi labelling = (refuted, prefix)
---   where
---     syn = synchronousProduct transitionSystem labelling buchi
---     initial = findIndices initial buchi
---     accepting = findIndices accepting buchi
---     bsccs = getBSCCs syn
---     reachableBsccs = depthFirstSearch syn [] initial
---     refuted = any (\bscc -> any (`elem` labelling) bscc && any (`elem` bscc) reachableBsccs) bsccs
---     prefix = if refuted then Just reachableBsccs else Nothing
--- 
--- generateBuchiStates :: [BuchiState Char]
--- generateBuchiStates = state0 : [state1]
---   where
---     state0 = BuchiState {
---       transitions = [('b', state0),('a', state1)],
---       accepting = False,
---       initial = True,
---       index = 0
---   }
---     state1 = BuchiState {
---         transitions = [('a', state1)],
---         accepting = True,
---          initial = False,
---         index = 1
---     }

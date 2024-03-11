@@ -14,10 +14,10 @@ k = Kripke
       ]
   , kripkeLabel =
       [
-          (0, ['n', 'z'])
-        , (1, ['a', 'z'])
-        , (2, ['t', 'z'])
-        , (3, ['u', 'z'])
+          (0, ["n", "true"])
+        , (1, ["a", "true"])
+        , (2, ["t", "true"])
+        , (3, ["u", "true"])
       ]
   }
 
@@ -29,9 +29,9 @@ openImpliesEventuallyClosedBuchi = Buchi
   {
     buchiTS =
       [
-          [Nothing, Just 'z', Just 'u']
-        , [Nothing, Just 'z', Just 'u']
-        , [Nothing, Nothing, Just 'z']
+          [Nothing, Just "true", Just "u"]
+        , [Nothing, Just "true" , Just "u"]
+        , [Nothing, Nothing, Just "true"]
       ]
   , accepting =
       [
@@ -43,8 +43,8 @@ alwaysEventuallyTransactionBuchi = Buchi
   {
       buchiTS =
         [
-            [Just 'z', Just 't']
-          , [Just 'z', Just 't']
+            [Just "true", Just "t"]
+          , [Just "true", Just "t"]
         ]
     , accepting =
       [
@@ -56,8 +56,8 @@ authImplXTransBuchi = Buchi
   {
       buchiTS =
         [
-            [Just 'z', Just 'a']
-          , [Just 'z', Just 't']
+            [Just "true", Just "a"]
+          , [Just "true", Just "t"]
         ]
     , accepting =
       [
