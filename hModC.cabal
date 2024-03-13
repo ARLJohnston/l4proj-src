@@ -24,6 +24,7 @@ library
     , parallel
     , parsec
     , containers
+    , lens
 
   hs-source-dirs: src
   default-language: Haskell2010
@@ -63,18 +64,18 @@ test-suite unit-tests
   hs-source-dirs: src, test
   default-language: Haskell2010
 
--- executable pop3-ctl
---   main-is: pop3_ctl.hs
---   build-depends:
---       base >= 4.14.1.0 && < 5
---     , parallel
---     , parsec
---   other-modules:
---       CTL
---     , CTLParser
---     , TransitionSystem
---   hs-source-dirs: src, case_study
---   default-language: Haskell2010
+executable pop3-ctl
+  main-is: pop3_ctl.hs
+  build-depends:
+      base >= 4.14.1.0 && < 5
+    , parallel
+    , parsec
+  other-modules:
+      CTL
+    , CTLParser
+    , TransitionSystem
+  hs-source-dirs: src, case_study
+  default-language: Haskell2010
 
 executable pop3-ltl
   main-is: pop3_ltl.hs

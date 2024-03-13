@@ -45,16 +45,16 @@ allUsersEventuallyUpdate = fromRight(CTLLabel []) $ runCTLParser "∀◇update" 
 main :: IO()
 main = do
   putStrLn "Result of: Exists an execution which is never authenticated:"
-  putStrLn $ show neverAuth
+  putStrLn $ show neverAuth ++ "\n"
 
   putStrLn "Result of: All paths are not authenticated until login:"
-  putStrLn $ show notAuthUntilLogin
+  putStrLn $ show notAuthUntilLogin ++ "\n"
 
   putStrLn "Result of: Exists some path which follows the 'normal' execution:"
-  putStrLn $ show normalExec
+  putStrLn $ show normalExec ++ "\n"
 
   putStrLn "Result of: All users eventuallly update:"
-  putStrLn $ show allUsersExec
+  putStrLn $ show allUsersExec ++ "\n"
 
   where
     normalExec = evaluateCTL normalExecution pop3Transitions

@@ -1,7 +1,7 @@
 module LTL (module LTL) where
 
 import Data.Graph (SCC(..), stronglyConnComp, flattenSCC)
-import Data.List (elemIndex, findIndices, elemIndices, find)
+import Data.List (elemIndex, findIndices, elemIndices, sort)
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as Set
 import Control.Parallel.Strategies
@@ -23,8 +23,29 @@ getPropositionsPostKripke k prior = concat propositions
     posterior = elemIndices True $ post (kripkeTS k) prior
     propositions = mapMaybe (\state -> lookup state (kripkeLabel k)) posterior
 
+-- | If state has no outgoing edges then add a self loop
+stutterExtension :: [[Bool]] -> [[Bool]]
+stutterExtension kripke = update kripke 0 indices
+  where
+    post = map (postInt kripke) [0..length kripke-1]
+    indices = sort $ elemIndices [] post
+
+    update k i [] = k
+    update k i (x:xs) = update (replace k i x) (i+1) xs
+    replace k i x = take x k ++ [take x (k !! x) ++ [True] ++ drop (x+1) (k !! x)] ++ drop (x+1) k
+
+-- | Pad a matrix to be square
+padToSquare :: [[Bool]] -> [[Bool]]
+padToSquare m = padded'
+  where
+    maxLength = max (maximum $ map length m) (length m)
+
+    padded = map (\row -> row ++ replicate (maxLength - length row) False) m
+    padded' = map (\row -> row ++ replicate (maxLength - length row) False) padded
+
+-- | Construct synchronous product of a Kripke structure and a Buchi automaton
 synchronousProduct :: Kripke -> Buchi -> [[Bool]]
-synchronousProduct kripke buchi =
+synchronousProduct kripke buchi = stutterExtension $ padToSquare $
   map
     (\s ->
       let
@@ -32,7 +53,7 @@ synchronousProduct kripke buchi =
       in
         map
           (\q ->
-             let
+              let
                possibleBuchiTransitions = catMaybes $ post (buchiTS buchi) q
              in
                getCommonElement possibleBuchiTransitions propositions
@@ -44,9 +65,11 @@ evaluateLTL k b = (refuted, prefix)
   where
     syn = synchronousProduct k b
     bsccs = getBSCCs syn
-    reachableBsccs = depthFirstSearch syn [] 0
-    refuted = any (\bscc -> any (`elem` accepting b) bscc && any (`elem` bscc) reachableBsccs) bsccs
-    prefix = if refuted then Just reachableBsccs else Nothing
+    acceptingBsccs = filter (any (`elem` accepting b)) bsccs
+    reachableStates = depthFirstSearch syn [] 0
+  -- check if any reachable state is in an accepting BSCC
+    refuted = not (any (any (`elem` reachableStates)) acceptingBsccs)
+    prefix = if refuted then Just reachableStates else Nothing
 
 adjMatrixToEdges :: [[Bool]] -> [(Int, Int, [Int])]
 adjMatrixToEdges mat = [(i, i, adj i) | i <- nodes]
@@ -60,7 +83,7 @@ depthFirstSearch matrix visited vertex
   | vertex `elem` visited = visited
   | otherwise = foldl (depthFirstSearch matrix) (vertex:visited) (reachableStates vertex) `using` parList rseq
   where
-    reachableStates s = elemIndices True (matrix !! s)
+    reachableStates s = elemIndices True $ post matrix s
 -- | Convert a adjacency matrix to a graph
 adjMatrixToGraph :: [[Bool]] -> [(Int, Int, [Int])]
 adjMatrixToGraph mat = [(i, i, adj i) | i <- nodes]

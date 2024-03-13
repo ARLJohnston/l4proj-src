@@ -14,10 +14,10 @@ k = Kripke
       ]
   , kripkeLabel =
       [
-          (0, ["n", "true"])
-        , (1, ["a", "true"])
-        , (2, ["t", "true"])
-        , (3, ["u", "true"])
+          (0, ["notConnected", "¬close", "¬transaction"])
+        , (1, ["authorization", "¬close", "¬close^open", "¬transaction", "authorized^¬transaction"])
+        , (2, ["transaction", "¬close", "¬close^open"])
+        , (3, ["update", "¬transaction"])
       ]
   }
 
@@ -29,13 +29,12 @@ openImpliesEventuallyClosedBuchi = Buchi
   {
     buchiTS =
       [
-          [Nothing, Just "true", Just "u"]
-        , [Nothing, Just "true" , Just "u"]
-        , [Nothing, Nothing, Just "true"]
+          [Nothing, Just "¬close^open"]
+        , [Nothing, Just "¬close"]
       ]
   , accepting =
       [
-        2
+        1
       ]
   }
 
@@ -43,8 +42,8 @@ alwaysEventuallyTransactionBuchi = Buchi
   {
       buchiTS =
         [
-            [Just "true", Just "t"]
-          , [Just "true", Just "t"]
+            [Nothing , Just "¬transaction"]
+          , [Nothing , Just "¬transaction"]
         ]
     , accepting =
       [
@@ -56,8 +55,38 @@ authImplXTransBuchi = Buchi
   {
       buchiTS =
         [
-            [Just "true", Just "a"]
-          , [Just "true", Just "t"]
+            [Nothing, Just "authorized", Nothing]
+          , [Nothing, Nothing, Just "authorized^¬transaction"]
+          , [Nothing, Nothing, Just "authorized"]
+        ]
+    , accepting =
+      [
+        1, 2, 3
+      ]
+  }
+
+lect16Kripke = Kripke {
+    kripkeTS =
+      [
+        [False, True, True]
+      , [False, True, False]
+      , [False, False, True]
+      ]
+  , kripkeLabel =
+      [
+          (0, ["¬a"])
+        , (1, ["¬a"])
+        , (2, ["a"])
+      ]
+}
+
+lect16Buchi = Buchi
+  {
+      buchiTS =
+        [
+            [Nothing, Just "a", Nothing]
+          , [Nothing, Just "a", Just "¬a"]
+          , [Nothing, Nothing, Nothing]
         ]
     , accepting =
       [
@@ -67,8 +96,19 @@ authImplXTransBuchi = Buchi
 
 main :: IO()
 main = do
+  putStrLn "Open implies eventually closed"
   case eval0 of
+    (True, prefix) -> putStrLn $ "Refuted:\npath: " ++ show prefix
+    _ -> putStrLn "Property holds"
+  putStrLn "Always eventually transaction"
+  case eval1 of
+    (True, prefix) -> putStrLn $ "Refuted:\npath: " ++ show prefix
+    _ -> putStrLn "Property holds"
+  putStrLn "Authorized implies next transaction"
+  case eval2 of
     (True, prefix) -> putStrLn $ "Refuted:\npath: " ++ show prefix
     _ -> putStrLn "Property holds"
   where
     eval0 = evaluateLTL k openImpliesEventuallyClosedBuchi
+    eval1 = evaluateLTL k alwaysEventuallyTransactionBuchi
+    eval2 = evaluateLTL k authImplXTransBuchi

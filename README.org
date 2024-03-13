@@ -47,8 +47,16 @@ stack test
 #+END_SRC
 Docker option runs tests as part of the build.
 
+** Case study
+Once inside an interactive shell (as part of Stack or Docker):
+#+BEGIN_SRC shell
+stack run (name of case study)
+#+END_SRC shell
+Where the name of the case study is either pop3-ctl or pop3-ctl.
 * QuickStart
-** Transition System
+
+** CTL
+*** Transition System
 Transition Systems are represented by an adjacency matrix
 #+BEGIN_SRC haskell
 transitionSystem :: Matrix Bool
@@ -59,8 +67,6 @@ transitionSystem = fromLists
     , [True, False, True]
   ]
 #+END_SRC
-
-** CTL
 *** Parser
 Parsing a formula can be done as such:
 #+BEGIN_SRC haskell
@@ -96,4 +102,5 @@ result = evaluateCTL formula transitionSystem
 
 ** LTL
 *** Formula
-LTL formulae are represented using Büchi automata and can be created using [[http://www.lsv.fr/~gastin/ltl2ba/][LTL2BA]] or similar, an example of use is presented in [[./case_study/pop3_ltl.hs][the case study]]
+LTL formulae are represented using Büchi automata and can be created using [[http://www.lsv.fr/~gastin/ltl2ba/][LTL2BA]] or similar, an example of use is presented in [[./case_study/pop3_ltl.hs][the case study]].
+All transitions that can be taken must be represented in the Kripke structure with the same set of transitions as the Büchi automaton.
