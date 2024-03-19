@@ -13,21 +13,39 @@ data Buchi = Buchi {
   , accepting :: [Int] -- Accepting indices
   } deriving Show
 
+data LTLFormula =
+    LTLLabel [Bool]
+  | LTLAtom [Bool]
+  | LTLAnd LTLFormula LTLFormula
+  | LTLNot LTLFormula
+  | Next LTLFormula
+  | Until LTLFormula LTLFormula
+    deriving (Eq)
 
+instance Show LTLFormula where
+  show (LTLLabel satisfy) = "Sat(" ++ show satisfy ++ ")"
+  show (LTLAtom satisfy) = "Sat(" ++ show satisfy ++ ")"
+  show (LTLAnd phi psi) = "(" ++ show phi ++ ") ^ (" ++ show psi ++ ")"
+  show (LTLNot phi) = "¬(" ++ show phi ++ ")"
+  show (Next phi) = "X(" ++ show phi ++ ")"
+  show (Until phi psi) = "(" ++ show phi ++ ") U (" ++ show psi ++ ")"
+
+-- | Get common elements between two lists of orderable components
 getCommonElement :: Ord a => [a] -> [a] -> Bool
 getCommonElement xs ys = not $ Set.null $ Set.intersection (Set.fromList xs) (Set.fromList ys)
 
+-- | Get proposiitons holding in next Kripke state
 getPropositionsPostKripke :: Kripke -> Int -> [String]
 getPropositionsPostKripke k prior = concat propositions
   where
     posterior = elemIndices True $ post (kripkeTS k) prior
-    propositions = mapMaybe (\state -> lookup state (kripkeLabel k)) posterior
+    propositions = mapMaybe (\state -> lookup state (kripkeLabel k)) posterior `using` parList rseq
 
 -- | If state has no outgoing edges then add a self loop
 stutterExtension :: [[Bool]] -> [[Bool]]
 stutterExtension kripke = update kripke 0 indices
   where
-    post = map (postInt kripke) [0..length kripke-1]
+    post = map (postInt kripke) [0..length kripke-1] `using` parList rseq
     indices = sort $ elemIndices [] post
 
     update k i [] = k
@@ -40,8 +58,8 @@ padToSquare m = padded'
   where
     maxLength = max (maximum $ map length m) (length m)
 
-    padded = map (\row -> row ++ replicate (maxLength - length row) False) m
-    padded' = map (\row -> row ++ replicate (maxLength - length row) False) padded
+    padded = map (\row -> row ++ replicate (maxLength - length row) False) m `using` parList rseq
+    padded' = map (\row -> row ++ replicate (maxLength - length row) False) padded `using` parList rseq
 
 -- | Construct synchronous product of a Kripke structure and a Buchi automaton
 synchronousProduct :: Kripke -> Buchi -> [[Bool]]
