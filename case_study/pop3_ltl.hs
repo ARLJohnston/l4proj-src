@@ -14,7 +14,7 @@ k = Kripke
       ]
   , kripkeLabel =
       [
-          (0, ["notConnected", "true","¬close", "¬close^open", "¬transaction", "authorized^¬transaction"])
+          (0, ["notConnected", "true","¬close", "¬transaction", "authorized^¬transaction"])
         , (1, ["authorization", "true","¬close", "¬close^open", "¬transaction", "authorized^¬transaction"])
         , (2, ["transaction", "true","¬close", "¬close^open"])
         , (3, ["update", "true", "¬transaction", "authorized^¬transaction"])
